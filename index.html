@@ -38,7 +38,6 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .btn{border:none;border-radius:8px;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer;color:#fff;background:var(--mint);flex:none}
 .btn:active{transform:scale(.98)}
 .btn.pink{background:var(--mint)}
-#list,#events{margin:0 16px;display:flex;flex-direction:column;gap:8px}
 #list,#events,#glist{margin:0 16px;display:flex;flex-direction:column;gap:8px}
 .todo,.eventrow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
 .todo.done,.eventrow.done{background:#f9fafb;border-color:#e5e7eb}
@@ -170,6 +169,7 @@ var tsel=keyOf(today);
 var curCat='per';
 var editId=null;
 var editTid=null;
+var editGid=null;
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var DOWS=['S','M','T','W','T','F','S'];
 var WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -377,6 +377,7 @@ $('#gotoday').addEventListener('click',function(){tsel=keyOf(today);renderTodos(
 function renderGrocery(){
   var el=$('#glist'),html='',j,g;
   for(j=0;j<gitems.length;j++){g=gitems[j];
+    if(g.id===editGid){html+='<div class="todo editing" data-id="'+g.id+'"><div class="edcol"><input type="text" class="eetext" value="'+esc(g.text)+'"></div><button class="btn tiny" data-act="save">\u2713</button><button class="del" data-act="cancel">\u21a9</button></div>';continue}
     html+='<div class="todo'+(g.done?' done':'')+'" data-id="'+g.id+'">'+
       '<div class="check" data-act="toggle">'+(g.done?'\u2713':'')+'</div>'+ 
       '<div class="txt">'+esc(g.text)+'</div>'+
@@ -392,14 +393,28 @@ function addGrocery(){
 }
 $('#gadd').addEventListener('click',addGrocery);
 $('#ginput').addEventListener('keydown',function(e){if(e.key==='Enter')addGrocery()});
+$('#glist').addEventListener('keydown',function(e){
+  var row=e.target.closest('.todo'); if(!row)return;
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('eetext')){
+    var b=row.querySelector('[data-act=save]'); if(b)b.click();
+  }
+});
 $('#glist').addEventListener('click',function(e){
   var row=e.target.closest('.todo'); if(!row)return;
   var id=row.getAttribute('data-id'),j;
-  if(e.target.closest('[data-act=toggle]')){
+  if(e.target.closest('[data-act=save]')){
+    var v=row.querySelector('.eetext').value.trim(); if(!v)return;
+    for(j=0;j<gitems.length;j++)if(gitems[j].id===id)gitems[j].text=v;
+    editGid=null; saveG(); renderGrocery();
+  } else if(e.target.closest('[data-act=cancel]')){
+    editGid=null; renderGrocery();
+  } else if(e.target.closest('[data-act=toggle]')){
     for(j=0;j<gitems.length;j++)if(gitems[j].id===id)gitems[j].done=!gitems[j].done;
     saveG(); renderGrocery();
   } else if(e.target.closest('[data-act=del]')){
     gitems=gitems.filter(function(x){return x.id!==id}); saveG(); renderGrocery();
+  } else if(e.target.closest('.txt')){
+    editGid=id; renderGrocery();
   }
 });
 $('#clearcheck').addEventListener('click',function(){gitems=gitems.filter(function(x){return !x.done});saveG();renderGrocery()});
