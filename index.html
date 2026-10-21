@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f4f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hasen's Planner">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<title>Hasen's Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+:root{--mint:#2563eb;--mint-light:#dbeafe;--pink:#ef4444;--ink:#111827;--muted:#6b7280}
+html,body{margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f3f4f6;min-height:100vh;color:var(--ink);-webkit-tap-highlight-color:transparent;padding-bottom:96px;font-size:16px}
+.wrap{max-width:480px;margin:0 auto;position:relative;z-index:1}
+header{display:flex;align-items:center;gap:12px;padding:22px 20px 4px}
+header h1{font-size:20px;margin:0;flex:1;font-weight:700;letter-spacing:-.2px}
+.spark{display:none}
+.mascot{display:none}
+.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(17,24,39,.08);margin:12px 16px;border:1px solid #e5e7eb}
+.pbar{height:6px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:10px}
+.pfill{height:100%;width:0;background:var(--mint);border-radius:999px;transition:width .35s}
+.daterow{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 16px 0}
+.daterow h2{font-size:16px;margin:0;font-weight:600;min-width:170px;text-align:center}
+.navbtn{width:36px;height:36px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;font-size:15px;color:var(--muted);font-weight:600;cursor:pointer;flex:none}
+.todaypill{display:block;margin:8px auto 0;border:1px solid #e5e7eb;background:#fff;color:var(--mint);font:inherit;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer}
+.catrow{display:flex;gap:8px;margin:12px 16px 0;flex-wrap:wrap}
+.chip{border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
+.chip .cd{width:10px;height:10px;border-radius:999px;flex:none}
+.chip.on{color:var(--ink);border-color:var(--mint);background:var(--mint-light)}
+.addrow{display:flex;gap:8px;margin:12px 16px}
+.addrow input[type=text]{flex:1;min-width:0;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;font:inherit;background:#fff;color:var(--ink)}
+.addrow input:focus{outline:none;border-color:var(--mint);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.addrow input[type=time]{border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font:inherit;background:#fff;color:var(--ink);width:112px}
+.btn{border:none;border-radius:8px;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer;color:#fff;background:var(--mint);flex:none}
+.btn:active{transform:scale(.98)}
+.btn.pink{background:var(--mint)}
+#list,#events{margin:0 16px;display:flex;flex-direction:column;gap:8px}
+.todo,.eventrow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.todo.done,.eventrow.done{background:#f9fafb;border-color:#e5e7eb}
+.todo.done .txt,.eventrow.done .txt{color:#9ca3af;text-decoration:line-through}
+.check{width:24px;height:24px;border-radius:6px;border:1.5px solid #d1d5db;background:#fff;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+.todo.done .check,.eventrow.done .check{background:var(--mint);border-color:var(--mint)}
+.tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;color:#fff;flex:none}
+.txt{flex:1;font-weight:500;word-break:break-word}
+.del{border:none;background:none;color:#9ca3af;font-size:17px;padding:4px 6px;cursor:pointer;flex:none}
+.small{margin:10px 16px;color:var(--muted);background:none;border:none;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
+.empty{text-align:center;color:#9ca3af;padding:24px 10px;font-weight:500}
+.empty b{display:none}
+.calhead{display:flex;align-items:center;justify-content:space-between;margin:12px 16px 2px}
+.calhead h2{font-size:17px;margin:0;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:10px 16px}
+.dow{text-align:center;font-size:11px;color:var(--muted);font-weight:600;padding:4px 0}
+.day{position:relative;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:500;background:#fff;border:1px solid #e5e7eb;cursor:pointer}
+.day.blank{background:none;border:none;cursor:default}
+.day.today{border-color:var(--mint)}
+.day.sel{background:var(--mint);color:#fff;border-color:var(--mint)}
+.day .dot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:999px;background:var(--mint)}
+.day.sel .dot{background:#fff}
+.daylabel{margin:14px 16px 4px;font-weight:600}
+.etime{background:#eff6ff;color:var(--mint);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;flex:none;white-space:nowrap}
+.etime.notime{background:#f3f4f6;color:var(--muted)}
+.addrow2{display:flex;gap:8px;margin:0 16px 12px;align-items:center}
+.addrow2 input[type=time]{border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font:inherit;background:#fff;color:var(--ink);width:104px;flex:none}
+.dash{color:#9ca3af;font-weight:600}
+.edcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.edcol input[type=text],.edcol select{border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;font:inherit;background:#fff;color:var(--ink);min-width:0}
+.todo.editing,.eventrow.editing{border-color:var(--mint)}
+.edtimes{display:flex;gap:6px;align-items:center}
+.edtimes input[type=time]{border:1px solid #e5e7eb;border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);width:96px;flex:none}
+.btn.tiny{padding:8px 12px;font-size:13px}
+.eventrow .txt,.todo .txt{cursor:pointer}
+.pri{width:9px;height:9px;border-radius:999px;flex:none}
+.mv{border:none;background:none;color:#9ca3af;font-size:12px;padding:2px 5px;cursor:pointer;flex:none;line-height:1}
+.mvcol{display:flex;flex-direction:column;gap:2px;flex:none}
+.edtimes select{flex:1;min-width:0}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom));z-index:5;background:linear-gradient(to top,#f3f4f6 60%,rgba(243,244,246,0))}
+.tabbar{display:flex;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 2px 8px rgba(17,24,39,.1);padding:4px}
+.tabbar button{border:none;background:none;font:inherit;font-weight:600;padding:10px 22px;border-radius:9px;color:var(--muted);cursor:pointer}
+.tabbar button.on{background:var(--mint);color:#fff}
+section[hidden]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Hasen's Planner</h1>
+</header>
+
+<section id="view-todos">
+  <div class="daterow">
+    <button class="navbtn" id="dprev">‹</button>
+    <h2 id="todolabel"></h2>
+    <button class="navbtn" id="dnext">›</button>
+  </div>
+  <button class="todaypill" id="gotoday" hidden>back to today</button>
+  <div class="card">
+    <div id="ptext" style="font-weight:700"></div>
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+  </div>
+  <div class="catrow" id="catrow"></div>
+  <div class="addrow">
+    <input type="text" id="tinput" placeholder="Add a task" autocomplete="off">
+    <button class="btn" id="tadd">+</button>
+  </div>
+  <div id="list"></div>
+  <button class="small" id="cleardone" hidden>clear finished tasks</button>
+</section>
+
+<section id="view-cal" hidden>
+  <div class="calhead">
+    <button class="navbtn" id="mprev">‹</button>
+    <h2 id="mlabel"></h2>
+    <button class="navbtn" id="mnext">›</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="daylabel" id="daylabel"></div>
+  <div id="events"></div>
+  <div class="addrow" style="margin-bottom:8px">
+    <input type="text" id="einput" placeholder="Add an event" autocomplete="off">
+  </div>
+  <div class="addrow2">
+    <input type="time" id="etimeinput">
+    <span class="dash">–</span>
+    <input type="time" id="eend">
+    <button class="btn pink" id="eadd">+</button>
+  </div>
+</section>
+</div>
+
+<nav><div class="tabbar">
+  <button id="tab-todos" class="on">To-dos</button>
+  <button id="tab-cal">Calendar</button>
+</div></nav>
+
+<script>
+var $=function(s){return document.querySelector(s)};
+var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events';
+var CATS={work:{label:'work',color:'#7c3aed'},biz:{label:'business',color:'#0d9488'},per:{label:'personal',color:'#f59e0b'}};
+var PRIS={hi:{label:'high',color:'#dc2626'},md:{label:'normal',color:'#9ca3af'},lo:{label:'low',color:'#d1d5db'}};
+var todos=[],events=[];
+try{todos=JSON.parse(localStorage.getItem(KEY_T)||'[]')||[]}catch(e){todos=[]}
+try{events=JSON.parse(localStorage.getItem(KEY_E)||'[]')||[]}catch(e){events=[]}
+if(!Array.isArray(todos))todos=[]; if(!Array.isArray(events))events=[];
+function save(){localStorage.setItem(KEY_T,JSON.stringify(todos));localStorage.setItem(KEY_E,JSON.stringify(events))}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function pad(n){return String(n).padStart(2,'0')}
+function keyOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function dayFromKey(k){var p=k.split('-');return new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10))}
+var today=new Date();
+var cur={y:today.getFullYear(),m:today.getMonth(),sel:keyOf(today)};
+var tsel=keyOf(today);
+var curCat='per';
+var editId=null;
+var editTid=null;
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DOWS=['S','M','T','W','T','F','S'];
+var WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var i,t;
+for(i=0;i<todos.length;i++){t=todos[i];
+  if(!t.date)   t.date=keyOf(today);
+  if(!CATS[t.cat]) t.cat='per';
+  if(!PRIS[t.pri]) t.pri='md';
+}
+
+function fmtLabel(k){var d=dayFromKey(k);return WDAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)}
+
+function renderChips(){
+  var html='',k;
+  for(k in CATS){
+    html+='<button class="chip'+(curCat===k?' on':'')+'" data-cat="'+k+'"><span class="cd" style="background:'+CATS[k].color+'"></span>'+CATS[k].label+'</button>';
+  }
+  $('#catrow').innerHTML=html;
+}
+function renderProgress(){
+  var rows=todos.filter(function(x){return x.date===tsel});
+  var n=rows.length,done=rows.filter(function(x){return x.done}).length;
+  $('#ptext').textContent=n?(done+' of '+n+' done'):'No tasks yet';
+  $('#pfill').style.width=n?Math.round(100*done/n)+'%':'0%';
+}
+function priOptions(p){
+  var h='';
+  for(var k in PRIS){h+='<option value="'+k+'"'+(p===k?' selected':'')+'>'+PRIS[k].label+'</option>'}
+  return h;
+}
+function moveTodo(id,dir,date){
+  var ai=-1,k;
+  for(k=0;k<todos.length;k++)if(todos[k].id===id){ai=k;break}
+  if(ai<0)return;
+  var same=[];
+  for(k=0;k<todos.length;k++)if(todos[k].date===date)same.push(k);
+  var pos=same.indexOf(ai); if(pos<0)return;
+  var q=dir==='up'?pos-1:pos+1; if(q<0||q>=same.length)return;
+  var tmp=todos[ai];todos[ai]=todos[same[q]];todos[same[q]]=tmp;
+  save();
+}
+function catOptions(cat){
+  var h='';
+  for(var k in CATS){h+='<option value="'+k+'"'+(cat===k?' selected':'')+'>'+CATS[k].label+'</option>'}
+  return h;
+}
+function taskEditRow(t){
+  return '<div class="todo editing" data-id="'+t.id+'">'+
+    '<div class="check" data-act="toggle">'+(t.done?'\u2713':'')+'</div>'+
+    '<div class="edcol"><input type="text" class="eetext" value="'+esc(t.text)+'">'+
+    '<div class="edtimes"><select class="eecat">'+catOptions(t.cat)+'</select><select class="eepri">'+priOptions(t.pri)+'</select></div></div>'+
+    '<div class="mvcol"><button class="mv" data-act="up">▲</button><button class="mv" data-act="dn">▼</button></div>'+
+    '<button class="btn tiny" data-act="save">✓</button><button class="del" data-act="cancel">↩</button>'+
+    '</div>';
+}
+function renderTodos(){
+  $('#todolabel').textContent=fmtLabel(tsel);
+  $('#gotoday').hidden=(tsel===keyOf(today));
+  var el=$('#list'),html='',rows=todos.filter(function(x){return x.date===tsel});
+  for(i=0;i<rows.length;i++){t=rows[i];
+    if(t.id===editTid){html+=taskEditRow(t);continue}
+    html+='<div class="todo'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
+      '<div class="check" data-act="toggle">'+(t.done?'\u2713':'')+'</div>'+
+      '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
+      '<span class="tag" style="background:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>'+
+      '<div class="txt">'+esc(t.text)+'</div>'+
+      '<button class="del" data-act="del">✕</button></div>';
+  }
+  el.innerHTML=html||'<div class="empty">No tasks for this day</div>';
+  $('#cleardone').hidden=!rows.some(function(x){return x.done});
+  renderProgress();
+}
+function renderDay(){
+  var el=$('#events'),html='',k,e,r;
+  var evs=events.filter(function(x){return x.date===cur.sel});
+  evs.sort(function(a,b){var x=a.time||'99:99',y=b.time||'99:99';return x<y?-1:x>y?1:0});
+  for(k=0;k<evs.length;k++){e=evs[k];
+    var tt=e.time?(e.end?(e.time+'-'+e.end):e.time):'';
+    if(e.id===editId){
+      html+='<div class="eventrow editing" data-id="'+e.id+'" data-kind="ev">'+
+        '<div class="edcol"><input type="text" class="eetext" value="'+esc(e.text)+'">'+
+        '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">–</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
+        '<button class="btn tiny" data-act="save">✓</button><button class="del" data-act="cancel">↩</button><button class="del" data-act="del">✕</button></div>';
+    } else {
+      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'all day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="del" data-act="del">✕</button></div>';
+    }
+  }
+  var tks=todos.filter(function(x){return x.date===cur.sel});
+  for(k=0;k<tks.length;k++){r=tks[k];
+    if(r.id===editTid){html+=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');continue}
+    html+='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="del" data-act="del">✕</button></div>';
+  }
+  el.innerHTML=html||'<div class="empty">Nothing planned</div>';
+}
+function renderCal(){
+  $('#mlabel').textContent=MONTHS[cur.m]+' '+cur.y;
+  var first=new Date(cur.y,cur.m,1).getDay();
+  var days=new Date(cur.y,cur.m+1,0).getDate();
+  var html='',d,k,cls;
+  for(i=0;i<7;i++)html+='<div class="dow">'+DOWS[i]+'</div>';
+  for(i=0;i<first;i++)html+='<div class="day blank"></div>';
+  for(d=1;d<=days;d++){
+    k=cur.y+'-'+pad(cur.m+1)+'-'+pad(d);
+    cls='day';
+    if(k===keyOf(today))cls+=' today';
+    if(k===cur.sel)cls+=' sel';
+    if(events.some(function(e){return e.date===k})||todos.some(function(x){return x.date===k}))cls+=' hasdot';
+    html+='<div class="'+cls+'" data-key="'+k+'">'+d+(cls.indexOf('hasdot')>-1?'<span class="dot"></span>':'')+'</div>';
+  }
+  $('#grid').innerHTML=html;
+  $('#daylabel').textContent=fmtLabel(cur.sel);
+  renderDay();
+}
+function renderAll(){renderTodos();renderCal()}
+
+function addTodo(){
+  var v=$('#tinput').value.trim(); if(!v)return;
+  todos.push({id:Date.now()+''+Math.floor(Math.random()*999),text:v,done:false,date:tsel,cat:curCat,pri:'md'});
+  $('#tinput').value=''; save(); renderTodos();
+}
+function addEvent(){
+  var v=$('#einput').value.trim(); if(!v)return;
+  events.push({id:Date.now()+''+Math.floor(Math.random()*999),date:cur.sel,text:v,time:$('#etimeinput').value||'',end:$('#eend').value||''});
+  $('#einput').value=''; $('#etimeinput').value=''; $('#eend').value=''; save(); renderCal();
+}
+$('#tadd').addEventListener('click',addTodo);
+$('#tinput').addEventListener('keydown',function(e){if(e.key==='Enter')addTodo()});
+$('#eadd').addEventListener('click',addEvent);
+$('#einput').addEventListener('keydown',function(e){if(e.key==='Enter')addEvent()});
+$('#catrow').addEventListener('click',function(e){
+  var c=e.target.closest('.chip'); if(!c)return;
+  curCat=c.getAttribute('data-cat'); renderChips();
+});
+$('#list').addEventListener('click',function(e){
+  var row=e.target.closest('.todo'); if(!row)return;
+  var id=row.getAttribute('data-id');
+  if(e.target.closest('[data-act=toggle]')){
+    for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].done=!todos[i].done;
+    save(); renderTodos();
+  } else if(e.target.closest('[data-act=save]')){
+    var txt=row.querySelector('.eetext').value.trim(); if(!txt)return;
+    var nc=row.querySelector('.eecat').value;
+    for(i=0;i<todos.length;i++)if(todos[i].id===id){todos[i].text=txt;todos[i].cat=nc;todos[i].pri=row.querySelector('.eepri').value||'md'}
+    editTid=null; save(); renderTodos();
+  } else if(e.target.closest('[data-act=cancel]')){
+    editTid=null; renderTodos();
+  } else if(e.target.closest('[data-act=del]')){
+    editTid=null; todos=todos.filter(function(x){return x.id!==id}); save(); renderTodos();
+  } else if(e.target.closest('[data-act=up]')||e.target.closest('[data-act=dn]')){
+    moveTodo(id,e.target.closest('[data-act=up]')?'up':'dn',tsel); renderTodos();
+  } else if(e.target.closest('.txt')){
+    editTid=id; renderTodos();
+  }
+});
+$('#cleardone').addEventListener('click',function(){
+  todos=todos.filter(function(x){return !(x.date===tsel&&x.done)});save();renderTodos()});
+$('#events').addEventListener('click',function(e){
+  var row=e.target.closest('.eventrow'); if(!row)return;
+  var id=row.getAttribute('data-id'),kind=row.getAttribute('data-kind');
+  if(e.target.closest('[data-act=save]')){
+    var txt=row.querySelector('.eetext').value.trim(); if(!txt)return;
+    if(kind==='ev'){
+      for(i=0;i<events.length;i++)if(events[i].id===id){events[i].text=txt;events[i].time=row.querySelector('.eestart').value||'';events[i].end=row.querySelector('.eeend').value||''}
+      editId=null;
+    } else {
+      var nc=row.querySelector('.eecat').value;
+      for(i=0;i<todos.length;i++)if(todos[i].id===id){todos[i].text=txt;todos[i].cat=nc;todos[i].pri=row.querySelector('.eepri').value||'md'}
+      editTid=null;
+    }
+    save(); renderCal();
+  } else if(e.target.closest('[data-act=cancel]')){
+    if(kind==='tsk')editTid=null; else editId=null;
+    renderCal();
+  } else if(e.target.closest('[data-act=toggle]')&&kind==='tsk'){
+    for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].done=!todos[i].done;
+    save(); renderCal();
+  } else if(e.target.closest('[data-act=del]')){
+    editId=null; editTid=null;
+    if(kind==='ev'){events=events.filter(function(x){return x.id!==id})}
+    else{todos=todos.filter(function(x){return x.id!==id})}
+    save(); renderCal();
+  } else if(kind==='ev'){
+    editId=id; renderCal();
+  } else if(kind==='tsk'&&(e.target.closest('[data-act=up]')||e.target.closest('[data-act=dn]'))){
+    moveTodo(id,e.target.closest('[data-act=up]')?'up':'dn',cur.sel); renderCal();
+  } else if(kind==='tsk'&&e.target.closest('.txt')){
+    editTid=id; renderCal();
+  }
+});
+$('#events').addEventListener('keydown',function(e){
+  var row=e.target.closest('.eventrow'); if(!row)return;
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('eetext')){
+    var b=row.querySelector('[data-act=save]'); if(b)b.click();
+  }
+});
+$('#grid').addEventListener('click',function(e){
+  var c=e.target.closest('.day'); if(!c||!c.getAttribute('data-key'))return;
+  cur.sel=c.getAttribute('data-key'); editId=null; editTid=null; renderCal();
+});
+$('#mprev').addEventListener('click',function(){cur.m--;if(cur.m<0){cur.m=11;cur.y--}renderCal()});
+$('#mnext').addEventListener('click',function(){cur.m++;if(cur.m>11){cur.m=0;cur.y++}renderCal()});
+$('#dprev').addEventListener('click',function(){var d=dayFromKey(tsel);d.setDate(d.getDate()-1);tsel=keyOf(d);renderTodos()});
+$('#dnext').addEventListener('click',function(){var d=dayFromKey(tsel);d.setDate(d.getDate()+1);tsel=keyOf(d);renderTodos()});
+$('#gotoday').addEventListener('click',function(){tsel=keyOf(today);renderTodos()});
+function switchTab(t){
+  $('#view-todos').hidden=(t!=='todos');
+  $('#view-cal').hidden=(t!=='cal');
+  $('#tab-todos').className=(t==='todos'?'on':'');
+  $('#tab-cal').className=(t==='cal'?'on':'');
+  renderAll();
+}
+$('#tab-todos').addEventListener('click',function(){switchTab('todos')});
+$('#tab-cal').addEventListener('click',function(){switchTab('cal')});
+renderChips();
+renderAll();
+</script>
+</body>
+</html>
