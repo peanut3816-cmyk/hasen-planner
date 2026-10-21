@@ -16,8 +16,8 @@
 html,body{margin:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f3f4f6;min-height:100vh;color:var(--ink);-webkit-tap-highlight-color:transparent;padding-bottom:96px;font-size:16px}
 .wrap{max-width:480px;margin:0 auto;position:relative;z-index:1}
-header{display:flex;align-items:center;gap:12px;padding:22px 20px 4px}
-header h1{font-size:20px;margin:0;flex:1;font-weight:700;letter-spacing:-.2px}
+header{display:flex;justify-content:center;align-items:center;padding:22px 20px 4px}
+header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .spark{display:none}
 .mascot{display:none}
 .card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(17,24,39,.08);margin:12px 16px;border:1px solid #e5e7eb}
@@ -139,7 +139,7 @@ section[hidden]{display:none}
 <script>
 var $=function(s){return document.querySelector(s)};
 var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events';
-var CATS={work:{label:'work',color:'#7c3aed'},biz:{label:'business',color:'#0d9488'},per:{label:'personal',color:'#f59e0b'}};
+var CATS={work:{label:'work',color:'#7c3aed'},biz:{label:'business',color:'#0d9488'},per:{label:'personal',color:'#f59e0b'},exe:{label:'exercise',color:'#39ff14',t:'#14532d'},stu:{label:'study',color:'#00e5ff',t:'#0c4a6e'},cho:{label:'chores',color:'#ff2bd6',t:'#fff'}};
 var PRIS={hi:{label:'high',color:'#dc2626'},md:{label:'normal',color:'#9ca3af'},lo:{label:'low',color:'#d1d5db'}};
 var todos=[],events=[];
 try{todos=JSON.parse(localStorage.getItem(KEY_T)||'[]')||[]}catch(e){todos=[]}
@@ -220,7 +220,7 @@ function renderTodos(){
     html+='<div class="todo'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
       '<div class="check" data-act="toggle">'+(t.done?'\u2713':'')+'</div>'+
       '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
-      '<span class="tag" style="background:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>'+
+      '<span class="tag" style="background:'+CATS[t.cat].color+';color:'+(CATS[t.cat].t||'#fff')+'">'+CATS[t.cat].label+'</span>'+
       '<div class="txt">'+esc(t.text)+'</div>'+
       '<button class="del" data-act="del">✕</button></div>';
   }
@@ -246,7 +246,7 @@ function renderDay(){
   var tks=todos.filter(function(x){return x.date===cur.sel});
   for(k=0;k<tks.length;k++){r=tks[k];
     if(r.id===editTid){html+=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');continue}
-    html+='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="del" data-act="del">✕</button></div>';
+    html+='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].color+';color:'+(CATS[r.cat].t||'#fff')+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="del" data-act="del">✕</button></div>';
   }
   el.innerHTML=html||'<div class="empty">Nothing planned</div>';
 }
