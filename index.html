@@ -39,6 +39,7 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .btn:active{transform:scale(.98)}
 .btn.pink{background:var(--mint)}
 #list,#events{margin:0 16px;display:flex;flex-direction:column;gap:8px}
+#list,#events,#glist{margin:0 16px;display:flex;flex-direction:column;gap:8px}
 .todo,.eventrow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
 .todo.done,.eventrow.done{background:#f9fafb;border-color:#e5e7eb}
 .todo.done .txt,.eventrow.done .txt{color:#9ca3af;text-decoration:line-through}
@@ -79,7 +80,7 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .edtimes select{flex:1;min-width:0}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom));z-index:5;background:linear-gradient(to top,#f3f4f6 60%,rgba(243,244,246,0))}
 .tabbar{display:flex;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 2px 8px rgba(17,24,39,.1);padding:4px}
-.tabbar button{border:none;background:none;font:inherit;font-weight:600;padding:10px 22px;border-radius:9px;color:var(--muted);cursor:pointer}
+.tabbar button{border:none;background:none;font:inherit;font-weight:600;padding:10px 14px;border-radius:9px;color:var(--muted);cursor:pointer}
 .tabbar button.on{background:var(--mint);color:#fff}
 section[hidden]{display:none}
 </style>
@@ -129,23 +130,36 @@ section[hidden]{display:none}
     <button class="btn pink" id="eadd">+</button>
   </div>
 </section>
+
+<section id="view-groc" hidden>
+  <div class="addrow" style="margin-top:14px">
+    <input type="text" id="ginput" placeholder="Add an item" autocomplete="off">
+    <button class="btn" id="gadd">+</button>
+  </div>
+  <div id="glist"></div>
+  <button class="small" id="clearcheck" hidden>clear checked items</button>
+</section>
 </div>
 
 <nav><div class="tabbar">
   <button id="tab-todos" class="on">To-dos</button>
   <button id="tab-cal">Calendar</button>
+  <button id="tab-groc">Groceries</button>
 </div></nav>
 
 <script>
 var $=function(s){return document.querySelector(s)};
-var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events';
+var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events',KEY_G='hasen_planner_groceries';
 var CATS={work:{label:'work',color:'#7c3aed'},biz:{label:'business',color:'#0d9488'},per:{label:'personal',color:'#f59e0b'},exe:{label:'exercise',color:'#39ff14',t:'#14532d'},stu:{label:'study',color:'#00e5ff',t:'#0c4a6e'},cho:{label:'chores',color:'#ff2bd6',t:'#fff'}};
 var PRIS={hi:{label:'high',color:'#dc2626'},md:{label:'normal',color:'#9ca3af'},lo:{label:'low',color:'#d1d5db'}};
-var todos=[],events=[];
+var todos=[],events=[],gitems=[];
+try{gitems=JSON.parse(localStorage.getItem(KEY_G)||'[]')||[]}catch(e){gitems=[]}
+if(!Array.isArray(gitems))gitems=[];
 try{todos=JSON.parse(localStorage.getItem(KEY_T)||'[]')||[]}catch(e){todos=[]}
 try{events=JSON.parse(localStorage.getItem(KEY_E)||'[]')||[]}catch(e){events=[]}
 if(!Array.isArray(todos))todos=[]; if(!Array.isArray(events))events=[];
 function save(){localStorage.setItem(KEY_T,JSON.stringify(todos));localStorage.setItem(KEY_E,JSON.stringify(events))}
+function saveG(){localStorage.setItem(KEY_G,JSON.stringify(gitems))}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function pad(n){return String(n).padStart(2,'0')}
 function keyOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
@@ -269,7 +283,7 @@ function renderCal(){
   $('#daylabel').textContent=fmtLabel(cur.sel);
   renderDay();
 }
-function renderAll(){renderTodos();renderCal()}
+function renderAll(){renderTodos();renderCal();renderGrocery()}
 
 function addTodo(){
   var v=$('#tinput').value.trim(); if(!v)return;
@@ -360,15 +374,47 @@ $('#mnext').addEventListener('click',function(){cur.m++;if(cur.m>11){cur.m=0;cur
 $('#dprev').addEventListener('click',function(){var d=dayFromKey(tsel);d.setDate(d.getDate()-1);tsel=keyOf(d);renderTodos()});
 $('#dnext').addEventListener('click',function(){var d=dayFromKey(tsel);d.setDate(d.getDate()+1);tsel=keyOf(d);renderTodos()});
 $('#gotoday').addEventListener('click',function(){tsel=keyOf(today);renderTodos()});
+function renderGrocery(){
+  var el=$('#glist'),html='',j,g;
+  for(j=0;j<gitems.length;j++){g=gitems[j];
+    html+='<div class="todo'+(g.done?' done':'')+'" data-id="'+g.id+'">'+
+      '<div class="check" data-act="toggle">'+(g.done?'\u2713':'')+'</div>'+ 
+      '<div class="txt">'+esc(g.text)+'</div>'+
+      '<button class="del" data-act="del">✕</button></div>';
+  }
+  el.innerHTML=html||'<div class="empty">Nothing on the list</div>';
+  $('#clearcheck').hidden=!gitems.some(function(x){return x.done});
+}
+function addGrocery(){
+  var v=$('#ginput').value.trim(); if(!v)return;
+  gitems.push({id:Date.now()+''+Math.floor(Math.random()*999),text:v,done:false});
+  $('#ginput').value=''; saveG(); renderGrocery();
+}
+$('#gadd').addEventListener('click',addGrocery);
+$('#ginput').addEventListener('keydown',function(e){if(e.key==='Enter')addGrocery()});
+$('#glist').addEventListener('click',function(e){
+  var row=e.target.closest('.todo'); if(!row)return;
+  var id=row.getAttribute('data-id'),j;
+  if(e.target.closest('[data-act=toggle]')){
+    for(j=0;j<gitems.length;j++)if(gitems[j].id===id)gitems[j].done=!gitems[j].done;
+    saveG(); renderGrocery();
+  } else if(e.target.closest('[data-act=del]')){
+    gitems=gitems.filter(function(x){return x.id!==id}); saveG(); renderGrocery();
+  }
+});
+$('#clearcheck').addEventListener('click',function(){gitems=gitems.filter(function(x){return !x.done});saveG();renderGrocery()});
 function switchTab(t){
   $('#view-todos').hidden=(t!=='todos');
   $('#view-cal').hidden=(t!=='cal');
+  $('#view-groc').hidden=(t!=='groc');
   $('#tab-todos').className=(t==='todos'?'on':'');
   $('#tab-cal').className=(t==='cal'?'on':'');
+  $('#tab-groc').className=(t==='groc'?'on':'');
   renderAll();
 }
 $('#tab-todos').addEventListener('click',function(){switchTab('todos')});
 $('#tab-cal').addEventListener('click',function(){switchTab('cal')});
+$('#tab-groc').addEventListener('click',function(){switchTab('groc')});
 renderChips();
 renderAll();
 </script>
