@@ -179,6 +179,18 @@ for(i=0;i<todos.length;i++){t=todos[i];
   if(!CATS[t.cat]) t.cat='per';
   if(!PRIS[t.pri]) t.pri='md';
 }
+var KEY_L='hasen_planner_lastday',tk=keyOf(today),moved=0;
+try{
+  var lastday=localStorage.getItem(KEY_L);
+  if(lastday&&lastday<tk){
+    for(i=0;i<todos.length;i++){t=todos[i];
+      if(!t.done&&(t.cat==='work'||t.cat==='biz')&&t.date<tk){t.date=tk;moved++}
+    }
+    if(moved)save();
+  }
+  localStorage.setItem(KEY_L,tk);
+}catch(e){}
+if(moved){var _ts=document.createElement('div');_ts.textContent='moved '+moved+' unfinished task'+(moved===1?'':'s')+' to today';_ts.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18)';document.body.appendChild(_ts);setTimeout(function(){_ts.remove()},3500)}
 
 function fmtLabel(k){var d=dayFromKey(k);return WDAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)}
 
