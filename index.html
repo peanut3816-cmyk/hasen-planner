@@ -26,8 +26,11 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .daterow{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 16px 0}
 .daterow h2{font-size:16px;margin:0;font-weight:600;min-width:170px;text-align:center}
 .navbtn{width:36px;height:36px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;font-size:15px;color:var(--muted);font-weight:600;cursor:pointer;flex:none}
+.todaypill[hidden]{display:none}
 .todaypill{display:block;margin:8px auto 0;border:1px solid #e5e7eb;background:#fff;color:var(--mint);font:inherit;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer}
-.catrow{display:flex;gap:8px;margin:12px 16px 0;flex-wrap:wrap}
+.catrow{display:flex;flex-direction:column;gap:8px;margin:12px 16px 0;align-items:flex-start}
+.catmenu{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px;box-shadow:0 1px 3px rgba(17,24,39,.08)}
+.caret{font-size:10px;color:var(--muted)}
 .chip{border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
 .chip .cd{width:10px;height:10px;border-radius:999px;flex:none}
 .chip.on{color:var(--ink);border-color:var(--mint);background:var(--mint-light)}
@@ -42,11 +45,13 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .todo,.eventrow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
 .todo.done,.eventrow.done{background:#f9fafb;border-color:#e5e7eb}
 .todo.done .txt,.eventrow.done .txt{color:#9ca3af;text-decoration:line-through}
-.check{width:24px;height:24px;border-radius:6px;border:1.5px solid #d1d5db;background:#fff;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+.check{position:relative;width:24px;height:24px;border-radius:6px;border:1.5px solid #d1d5db;background:#fff;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
 .todo.done .check,.eventrow.done .check{background:var(--mint);border-color:var(--mint)}
+.check::before{content:'';position:absolute;inset:-9px}
 .tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;color:#fff;flex:none}
 .txt{flex:1;font-weight:500;word-break:break-word}
 .del{border:none;background:none;color:#9ca3af;font-size:17px;padding:4px 6px;cursor:pointer;flex:none}
+.edit{border:1px solid #e5e7eb;background:#fff;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;flex:none}
 .small{margin:10px 16px;color:var(--muted);background:none;border:none;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
 .empty{text-align:center;color:#9ca3af;padding:24px 10px;font-weight:500}
 .empty b{display:none}
@@ -82,6 +87,8 @@ nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;p
 .tabbar button{border:none;background:none;font:inherit;font-weight:600;padding:10px 14px;border-radius:9px;color:var(--muted);cursor:pointer}
 .tabbar button.on{background:var(--mint);color:#fff}
 section[hidden]{display:none}
+#undotoast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18);display:flex;align-items:center;gap:10px;white-space:nowrap}
+#undotoast button{border:none;background:none;color:#93c5fd;font:inherit;font-weight:600;cursor:pointer;padding:2px 4px}
 </style>
 </head>
 <body>
@@ -149,7 +156,7 @@ section[hidden]{display:none}
 <script>
 var $=function(s){return document.querySelector(s)};
 var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events',KEY_G='hasen_planner_groceries';
-var CATS={work:{label:'work',color:'#7c3aed'},biz:{label:'business',color:'#0d9488'},per:{label:'personal',color:'#f59e0b'},exe:{label:'exercise',color:'#39ff14',t:'#14532d'},stu:{label:'study',color:'#00e5ff',t:'#0c4a6e'},cho:{label:'chores',color:'#ff2bd6',t:'#fff'}};
+var CATS={work:{label:'work',color:'#6d5a9e',bg:'#ece7f6'},biz:{label:'business',color:'#3d7a6f',bg:'#dfeeea'},per:{label:'personal',color:'#a5741f',bg:'#f8ecd6'},exe:{label:'exercise',color:'#4f7a58',bg:'#e2efe5'},stu:{label:'study',color:'#4a6d8c',bg:'#e1edf5'},cho:{label:'chores',color:'#9c5a86',bg:'#f5e3ef'}};
 var PRIS={hi:{label:'high',color:'#dc2626'},md:{label:'normal',color:'#9ca3af'},lo:{label:'low',color:'#d1d5db'}};
 var todos=[],events=[],gitems=[];
 try{gitems=JSON.parse(localStorage.getItem(KEY_G)||'[]')||[]}catch(e){gitems=[]}
@@ -179,6 +186,27 @@ for(i=0;i<todos.length;i++){t=todos[i];
   if(!CATS[t.cat]) t.cat='per';
   if(!PRIS[t.pri]) t.pri='md';
 }
+var undoTimer=null;
+function hideUndoToast(){if(undoTimer){clearTimeout(undoTimer);undoTimer=null}var d=document.getElementById('undotoast');if(d)d.remove()}
+function deleteTodo(id){
+  var k;
+  for(k=0;k<todos.length;k++){
+    if(todos[k].id===id){
+      var idx=k,item=todos[k];
+      todos.splice(k,1); save();
+      hideUndoToast();
+      var d=document.createElement('div'); d.id='undotoast';
+      d.innerHTML='<span>Task deleted</span><button type="button">Undo</button>';
+      d.querySelector('button').addEventListener('click',function(){
+        hideUndoToast();
+        todos.splice(Math.min(idx,todos.length),0,item); save(); renderTodos(); renderCal();
+      });
+      document.body.appendChild(d);
+      undoTimer=setTimeout(hideUndoToast,5000);
+      return;
+    }
+  }
+}
 var KEY_L='hasen_planner_lastday',tk=keyOf(today),moved=0;
 try{
   var lastday=localStorage.getItem(KEY_L);
@@ -194,10 +222,16 @@ if(moved){var _ts=document.createElement('div');_ts.textContent='moved '+moved+'
 
 function fmtLabel(k){var d=dayFromKey(k);return WDAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)}
 
+var catOpen=false;
 function renderChips(){
-  var html='',k;
-  for(k in CATS){
-    html+='<button class="chip'+(curCat===k?' on':'')+'" data-cat="'+k+'"><span class="cd" style="background:'+CATS[k].color+'"></span>'+CATS[k].label+'</button>';
+  var cur=CATS[curCat],k;
+  var html='<button class="chip on" data-act="catmenu"><span class="cd" style="background:'+cur.color+'"></span>'+cur.label+' <span class="caret">'+(catOpen?'\u25b4':'\u25be')+'</span></button>';
+  if(catOpen){
+    html+='<div class="catmenu">';
+    for(k in CATS){
+      html+='<button class="chip'+(curCat===k?' on':'')+'" data-cat="'+k+'"><span class="cd" style="background:'+CATS[k].color+'"></span>'+CATS[k].label+'</button>';
+    }
+    html+='</div>';
   }
   $('#catrow').innerHTML=html;
 }
@@ -246,9 +280,9 @@ function renderTodos(){
     html+='<div class="todo'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
       '<div class="check" data-act="toggle">'+(t.done?'\u2713':'')+'</div>'+
       '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
-      '<span class="tag" style="background:'+CATS[t.cat].color+';color:'+(CATS[t.cat].t||'#fff')+'">'+CATS[t.cat].label+'</span>'+
+      '<span class="tag" style="background:'+CATS[t.cat].bg+';color:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>'+
       '<div class="txt">'+esc(t.text)+'</div>'+
-      '<button class="del" data-act="del">✕</button></div>';
+      '<button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
   }
   el.innerHTML=html||'<div class="empty">No tasks for this day</div>';
   $('#cleardone').hidden=!rows.some(function(x){return x.done});
@@ -266,13 +300,13 @@ function renderDay(){
         '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">–</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
         '<button class="btn tiny" data-act="save">✓</button><button class="del" data-act="cancel">↩</button><button class="del" data-act="del">✕</button></div>';
     } else {
-      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'all day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="del" data-act="del">✕</button></div>';
+      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'all day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
     }
   }
   var tks=todos.filter(function(x){return x.date===cur.sel});
   for(k=0;k<tks.length;k++){r=tks[k];
     if(r.id===editTid){html+=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');continue}
-    html+='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].color+';color:'+(CATS[r.cat].t||'#fff')+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="del" data-act="del">✕</button></div>';
+    html+='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
   }
   el.innerHTML=html||'<div class="empty">Nothing planned</div>';
 }
@@ -312,8 +346,9 @@ $('#tinput').addEventListener('keydown',function(e){if(e.key==='Enter')addTodo()
 $('#eadd').addEventListener('click',addEvent);
 $('#einput').addEventListener('keydown',function(e){if(e.key==='Enter')addEvent()});
 $('#catrow').addEventListener('click',function(e){
+  if(e.target.closest('[data-act=catmenu]')){catOpen=!catOpen;renderChips();return}
   var c=e.target.closest('.chip'); if(!c)return;
-  curCat=c.getAttribute('data-cat'); renderChips();
+  curCat=c.getAttribute('data-cat'); catOpen=false; renderChips();
 });
 $('#list').addEventListener('click',function(e){
   var row=e.target.closest('.todo'); if(!row)return;
@@ -329,9 +364,11 @@ $('#list').addEventListener('click',function(e){
   } else if(e.target.closest('[data-act=cancel]')){
     editTid=null; renderTodos();
   } else if(e.target.closest('[data-act=del]')){
-    editTid=null; todos=todos.filter(function(x){return x.id!==id}); save(); renderTodos();
+    editTid=null; deleteTodo(id); renderTodos();
   } else if(e.target.closest('[data-act=up]')||e.target.closest('[data-act=dn]')){
     moveTodo(id,e.target.closest('[data-act=up]')?'up':'dn',tsel); renderTodos();
+  } else if(e.target.closest('[data-act=edit]')){
+    editTid=id; renderTodos();
   } else if(e.target.closest('.txt')){
     editTid=id; renderTodos();
   }
@@ -360,9 +397,12 @@ $('#events').addEventListener('click',function(e){
     save(); renderCal();
   } else if(e.target.closest('[data-act=del]')){
     editId=null; editTid=null;
-    if(kind==='ev'){events=events.filter(function(x){return x.id!==id})}
-    else{todos=todos.filter(function(x){return x.id!==id})}
-    save(); renderCal();
+    if(kind==='ev'){events=events.filter(function(x){return x.id!==id});save()}
+    else{deleteTodo(id)}
+    renderCal();
+  } else if(e.target.closest('[data-act=edit]')){
+    if(kind==='tsk')editTid=id; else editId=id;
+    renderCal();
   } else if(kind==='ev'){
     editId=id; renderCal();
   } else if(kind==='tsk'&&(e.target.closest('[data-act=up]')||e.target.closest('[data-act=dn]'))){
@@ -393,7 +433,7 @@ function renderGrocery(){
     html+='<div class="todo'+(g.done?' done':'')+'" data-id="'+g.id+'">'+
       '<div class="check" data-act="toggle">'+(g.done?'\u2713':'')+'</div>'+ 
       '<div class="txt">'+esc(g.text)+'</div>'+
-      '<button class="del" data-act="del">✕</button></div>';
+      '<button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
   }
   el.innerHTML=html||'<div class="empty">Nothing on the list</div>';
   $('#clearcheck').hidden=!gitems.some(function(x){return x.done});
@@ -425,6 +465,8 @@ $('#glist').addEventListener('click',function(e){
     saveG(); renderGrocery();
   } else if(e.target.closest('[data-act=del]')){
     gitems=gitems.filter(function(x){return x.id!==id}); saveG(); renderGrocery();
+  } else if(e.target.closest('[data-act=edit]')){
+    editGid=id; renderGrocery();
   } else if(e.target.closest('.txt')){
     editGid=id; renderGrocery();
   }
@@ -447,3 +489,4 @@ renderAll();
 </script>
 </body>
 </html>
+
