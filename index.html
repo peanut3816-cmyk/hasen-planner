@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
-:root{--teal:#146b5d;--teal-soft:#e3efec;--mint:#146b5d;--mint-light:#e3efec;--pink:#ef4444;--ink:#1e1c1a;--muted:#6b6560;--paper:#f6f4f1;--line:#e3ded8}
+:root{--teal:#2b2b2b;--teal-soft:#ecebe8;--mint:#2b2b2b;--mint-light:#ecebe8;--pink:#ef4444;--ink:#1e1c1a;--muted:#6b6560;--paper:#f6f4f1;--line:#e3ded8}
 html,body{margin:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f6f4f1;min-height:100vh;color:var(--ink);-webkit-tap-highlight-color:transparent;padding-bottom:96px;font-size:16px}
 .wrap{max-width:480px;margin:0 auto;position:relative;z-index:1}
@@ -36,7 +36,7 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .chip.on{color:var(--ink);border-color:var(--mint);background:var(--mint-light)}
 .addrow{display:flex;gap:8px;margin:12px 16px}
 .addrow input[type=text]{flex:1;min-width:0;border:1px solid #e3ded8;border-radius:8px;padding:12px 14px;font:inherit;background:#fff;color:var(--ink)}
-.addrow input:focus{outline:none;border-color:var(--mint);box-shadow:0 0 0 3px rgba(20,107,93,.12)}
+.addrow input:focus{outline:none;border-color:var(--mint);box-shadow:0 0 0 3px rgba(43,43,43,.12)}
 .addrow input[type=time]{border:1px solid #e3ded8;border-radius:8px;padding:8px 10px;font:inherit;background:#fff;color:var(--ink);width:112px}
 .btn{border:none;border-radius:8px;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer;color:#fff;background:var(--mint);flex:none}
 .btn:active{transform:scale(.98)}
@@ -68,7 +68,7 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 #monthbox[hidden]{display:none}
 .datebtn{font:inherit;font-size:16px;font-weight:600;min-width:170px;text-align:center;background:none;border:none;color:var(--ink);cursor:pointer;padding:8px 4px}
 .daylabel{margin:14px 16px 4px;font-weight:600}
-.etime{background:#e3efec;color:var(--mint);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;flex:none;white-space:nowrap}
+.etime{background:#ecebe8;color:var(--mint);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;flex:none;white-space:nowrap}
 .etime.notime{background:#f6f4f1;color:var(--muted)}
 .addrow2{display:flex;gap:8px;margin:0 16px 12px;align-items:center}
 .addrow2 input[type=time]{border:1px solid #e3ded8;border-radius:8px;padding:8px 10px;font:inherit;background:#fff;color:var(--ink);width:104px;flex:none}
@@ -90,7 +90,7 @@ nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;p
 .tabbar button.on{background:var(--mint);color:#fff}
 section[hidden]{display:none}
 #undotoast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18);display:flex;align-items:center;gap:10px;white-space:nowrap}
-#undotoast button{border:none;background:none;color:#8fc6ba;font:inherit;font-weight:600;cursor:pointer;padding:2px 4px}
+#undotoast button{border:none;background:none;color:#d4d0ca;font:inherit;font-weight:600;cursor:pointer;padding:2px 4px}
 
 .addrow2[hidden]{display:none}
 .timelink[hidden]{display:none}
@@ -187,7 +187,7 @@ section[hidden]{display:none}
 <script>
 var $=function(s){return document.querySelector(s)};
 var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events',KEY_G='hasen_planner_groceries';
-var CATS={work:{label:'Work',color:'#6d5a9e',bg:'#ece7f6'},biz:{label:'Business',color:'#3d7a6f',bg:'#dfeeea'},per:{label:'Personal',color:'#a5741f',bg:'#f8ecd6'},exe:{label:'Exercise',color:'#4f7a58',bg:'#e2efe5'},stu:{label:'Study',color:'#4a6d8c',bg:'#e1edf5'},cho:{label:'Chores',color:'#9c5a86',bg:'#f5e3ef'}};
+var CATS={work:{label:'Work',color:'#4a4744',bg:'#ecebe8'},biz:{label:'Business',color:'#4a4744',bg:'#ecebe8'},per:{label:'Personal',color:'#4a4744',bg:'#ecebe8'},exe:{label:'Exercise',color:'#4a4744',bg:'#ecebe8'},stu:{label:'Study',color:'#4a4744',bg:'#ecebe8'},cho:{label:'Chores',color:'#4a4744',bg:'#ecebe8'}};
 var PRIS={hi:{label:'High',color:'#dc2626'},md:{label:'Normal',color:'#9d968e'},lo:{label:'Low',color:'#d8d2ca'}};
 var todos=[],events=[],gitems=[];
 try{gitems=JSON.parse(localStorage.getItem(KEY_G)||'[]')||[]}catch(e){gitems=[]}
