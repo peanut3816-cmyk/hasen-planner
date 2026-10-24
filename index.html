@@ -106,13 +106,32 @@ section[hidden]{display:none}
 .donesec[open] .dcaret{transform:rotate(180deg)}
 .donesec .donerows{display:flex;flex-direction:column;gap:8px;padding:2px 0 4px}
 .edtimes input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);flex:1;min-width:0}
+.bkbtn{position:absolute;top:20px;right:16px;border:1px solid #e3ded8;background:#fff;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;z-index:2}
+#bkpanel .bktitle{font-weight:700;margin-bottom:4px}
+#bkpanel p{color:var(--muted);font-size:13px;margin:0 0 10px}
+#bkpanel .bkrow{display:flex;gap:8px;flex-wrap:wrap}
+#bkconfirm{margin-top:10px;font-size:13px;background:#fbfaf8;border:1px solid #e3ded8;border-radius:8px;padding:10px}
+#bkconfirm .bkrow{margin-top:8px}
+#bkstatus{font-size:12px;color:var(--muted);margin:10px 0 0}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
   <h1>Hasen's Planner</h1>
+  <button class="bkbtn" id="bktoggle" aria-expanded="false">Backup</button>
 </header>
+<div class="card" id="bkpanel" hidden>
+  <div class="bktitle">Your data</div>
+  <p>Entries are saved in this browser on this device. Export a backup file to keep a copy you can restore later. A safety copy is also kept inside the app.</p>
+  <div class="bkrow">
+    <button class="btn tiny" id="bkexport">Export backup</button>
+    <button class="edit" id="bkimport" style="padding:8px 12px">Restore backup</button>
+  </div>
+  <input type="file" id="bkfile" accept="application/json,.json" hidden>
+  <div id="bkconfirm" hidden></div>
+  <p id="bkstatus"></p>
+</div>
 
 <section id="view-todos">
   <div class="daterow">
@@ -190,13 +209,33 @@ var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events',KEY_G='hasen_planne
 var CATS={work:{label:'Work',color:'#4a4744',bg:'#ecebe8'},biz:{label:'Business',color:'#4a4744',bg:'#ecebe8'},per:{label:'Personal',color:'#4a4744',bg:'#ecebe8'},exe:{label:'Exercise',color:'#4a4744',bg:'#ecebe8'},stu:{label:'Study',color:'#4a4744',bg:'#ecebe8'},cho:{label:'Chores',color:'#4a4744',bg:'#ecebe8'}};
 var PRIS={hi:{label:'High',color:'#dc2626'},md:{label:'Normal',color:'#9d968e'},lo:{label:'Low',color:'#d8d2ca'}};
 var todos=[],events=[],gitems=[];
-try{gitems=JSON.parse(localStorage.getItem(KEY_G)||'[]')||[]}catch(e){gitems=[]}
-if(!Array.isArray(gitems))gitems=[];
-try{todos=JSON.parse(localStorage.getItem(KEY_T)||'[]')||[]}catch(e){todos=[]}
-try{events=JSON.parse(localStorage.getItem(KEY_E)||'[]')||[]}catch(e){events=[]}
-if(!Array.isArray(todos))todos=[]; if(!Array.isArray(events))events=[];
-function save(){localStorage.setItem(KEY_T,JSON.stringify(todos));localStorage.setItem(KEY_E,JSON.stringify(events))}
-function saveG(){localStorage.setItem(KEY_G,JSON.stringify(gitems))}
+var KEY_SNAP='hasen_planner_snapshot';
+function readKey(k){var raw=null;try{raw=localStorage.getItem(k)}catch(e){return{a:[],bad:false}}if(raw==null)return{a:[],bad:false};try{var v=JSON.parse(raw);return{a:Array.isArray(v)?v:[],bad:!Array.isArray(v)}}catch(e){return{a:[],bad:true}}}
+var _rt=readKey(KEY_T),_re=readKey(KEY_E),_rg=readKey(KEY_G);
+todos=_rt.a;events=_re.a;gitems=_rg.a;
+var recovered=false;
+if(_rt.bad||_re.bad||_rg.bad){
+  try{
+    var _snap=JSON.parse(localStorage.getItem(KEY_SNAP)||'null');
+    if(_snap&&Array.isArray(_snap.todos)&&Array.isArray(_snap.events)&&Array.isArray(_snap.groceries)){
+      todos=_snap.todos;events=_snap.events;gitems=_snap.groceries;recovered=true;
+    }
+  }catch(e){}
+}
+var storageBroken=false;
+function noteMsg(msg){var _n=document.createElement('div');_n.textContent=msg;_n.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18);max-width:90vw;text-align:center';document.body.appendChild(_n);setTimeout(function(){_n.remove()},4500)}
+function persistAll(){
+  try{
+    localStorage.setItem(KEY_T,JSON.stringify(todos));
+    localStorage.setItem(KEY_E,JSON.stringify(events));
+    localStorage.setItem(KEY_G,JSON.stringify(gitems));
+    localStorage.setItem(KEY_SNAP,JSON.stringify({t:Date.now(),todos:todos,events:events,groceries:gitems}));
+    storageBroken=false;
+  }catch(e){if(!storageBroken){storageBroken=true;noteMsg("Couldn't save. Browser storage may be full - export a backup using the Backup button.")}}
+}
+function save(){persistAll()}
+function saveG(){persistAll()}
+if(recovered){persistAll();setTimeout(function(){noteMsg('Recovered your entries from the in-app safety copy')},700)}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function pad(n){return String(n).padStart(2,'0')}
 function keyOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
@@ -590,6 +629,78 @@ $('#clearcheck').addEventListener('click',function(){
     saveG(); renderGrocery();
   });
 });
+/* Backup and restore */
+var bkpanel=$('#bkpanel'),bktoggle=$('#bktoggle');
+function fmtWhen(t){try{return new Date(t).toLocaleString('en-NZ',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}catch(e){return ''}}
+function renderBkStatus(){
+  var m='';
+  try{var _s=JSON.parse(localStorage.getItem(KEY_SNAP)||'null');if(_s&&_s.t)m='In-app safety copy from '+fmtWhen(_s.t)+'.'}catch(e){}
+  $('#bkstatus').textContent=m;
+}
+bktoggle.addEventListener('click',function(){bkpanel.hidden=!bkpanel.hidden;bktoggle.setAttribute('aria-expanded',String(!bkpanel.hidden));if(!bkpanel.hidden)renderBkStatus()});
+function cleanTodo(x){
+  if(!x||typeof x.text!=='string')return null;
+  var d=(typeof x.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.date))?x.date:keyOf(new Date());
+  return{id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),text:x.text.slice(0,500),done:!!x.done,date:d,cat:CATS[x.cat]?x.cat:'per',pri:PRIS[x.pri]?x.pri:'md'};
+}
+function cleanEvent(x){
+  if(!x||typeof x.text!=='string')return null;
+  var d=(typeof x.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.date))?x.date:keyOf(new Date());
+  return{id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),date:d,text:x.text.slice(0,500),time:typeof x.time==='string'?x.time:'',end:typeof x.end==='string'?x.end:''};
+}
+function cleanGroc(x){
+  if(!x||typeof x.text!=='string')return null;
+  return{id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),text:x.text.slice(0,500),done:!!x.done};
+}
+function cleanList(arr,fn){var out=[],k;if(!Array.isArray(arr))return out;for(k=0;k<arr.length;k++){var v=fn(arr[k]);if(v)out.push(v)}return out}
+$('#bkexport').addEventListener('click',function(){
+  var data={app:'hasen-planner',version:1,exportedAt:new Date().toISOString(),todos:todos,events:events,groceries:gitems};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='planner-backup-'+keyOf(new Date())+'.json';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},2000);
+  $('#bkstatus').textContent='Backup file downloaded. Keep it somewhere safe, like the Files app.';
+});
+var pendingRestore=null;
+$('#bkimport').addEventListener('click',function(){$('#bkfile').click()});
+$('#bkfile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];this.value='';
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    var box=$('#bkconfirm');
+    try{
+      var data=JSON.parse(r.result);
+      if(!data||(!Array.isArray(data.todos)&&!Array.isArray(data.events)&&!Array.isArray(data.groceries)))throw new Error('bad');
+      var ct=cleanList(data.todos,cleanTodo),ce=cleanList(data.events,cleanEvent),cg=cleanList(data.groceries,cleanGroc);
+      pendingRestore={todos:ct,events:ce,groceries:cg};
+      var when=data.exportedAt?(' from '+fmtWhen(data.exportedAt)):'';
+      box.innerHTML='This backup'+when+' has <b>'+ct.length+'</b> task'+(ct.length===1?'':'s')+', <b>'+ce.length+'</b> event'+(ce.length===1?'':'s')+' and <b>'+cg.length+'</b> grocery item'+(cg.length===1?'':'s')+'. Restoring replaces what is currently in the planner.<div class="bkrow"><button class="btn tiny" id="bkyes">Restore</button><button class="edit" id="bkno" style="padding:8px 12px">Cancel</button></div>';
+      box.hidden=false;
+      $('#bkyes').addEventListener('click',doRestore);
+      $('#bkno').addEventListener('click',function(){box.hidden=true;pendingRestore=null});
+    }catch(e){
+      box.textContent="That file doesn't look like a planner backup.";
+      box.hidden=false;
+    }
+  };
+  r.readAsText(f);
+});
+function doRestore(){
+  var box=$('#bkconfirm');box.hidden=true;
+  if(!pendingRestore)return;
+  var prev={todos:todos,events:events,groceries:gitems};
+  todos=pendingRestore.todos;events=pendingRestore.events;gitems=pendingRestore.groceries;
+  pendingRestore=null;
+  editId=null;editTid=null;editGid=null;
+  persistAll();
+  renderAll();renderChips();renderProgress();
+  showUndo('Backup restored',function(){
+    todos=prev.todos;events=prev.events;gitems=prev.groceries;
+    persistAll();renderAll();renderChips();renderProgress();
+  });
+  renderBkStatus();
+}
 function switchTab(t){
   calOpen=false;
   $('#view-todos').hidden=(t!=='todos');
