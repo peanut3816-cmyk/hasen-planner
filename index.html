@@ -210,26 +210,25 @@ var CATS={work:{label:'Work',color:'#4a4744',bg:'#ecebe8'},biz:{label:'Business'
 var PRIS={hi:{label:'High',color:'#dc2626'},md:{label:'Normal',color:'#9d968e'},lo:{label:'Low',color:'#d8d2ca'}};
 var todos=[],events=[],gitems=[];
 var KEY_SNAP='hasen_planner_snapshot';
-function readKey(k){var raw=null;try{raw=localStorage.getItem(k)}catch(e){return{a:[],bad:false}}if(raw==null)return{a:[],bad:false};try{var v=JSON.parse(raw);return{a:Array.isArray(v)?v:[],bad:!Array.isArray(v)}}catch(e){return{a:[],bad:true}}}
+function readKey(k){var raw=null;try{raw=localStorage.getItem(k)}catch(e){return{a:[],bad:false,missing:true}}if(raw==null)return{a:[],bad:false,missing:true};try{var v=JSON.parse(raw);return{a:Array.isArray(v)?v:[],bad:!Array.isArray(v),missing:false}}catch(e){return{a:[],bad:true,missing:false}}}
+function snapData(){try{var _s=JSON.parse(localStorage.getItem(KEY_SNAP)||'null');if(_s&&Array.isArray(_s.todos)&&Array.isArray(_s.events)&&Array.isArray(_s.groceries))return _s}catch(e){}return null}
 var _rt=readKey(KEY_T),_re=readKey(KEY_E),_rg=readKey(KEY_G);
 todos=_rt.a;events=_re.a;gitems=_rg.a;
 var recovered=false;
-if(_rt.bad||_re.bad||_rg.bad){
-  try{
-    var _snap=JSON.parse(localStorage.getItem(KEY_SNAP)||'null');
-    if(_snap&&Array.isArray(_snap.todos)&&Array.isArray(_snap.events)&&Array.isArray(_snap.groceries)){
-      todos=_snap.todos;events=_snap.events;gitems=_snap.groceries;recovered=true;
-    }
-  }catch(e){}
+var _snap=snapData();
+if(_snap){
+  if((_rt.bad||_rt.missing)&&_snap.todos.length){todos=_snap.todos;recovered=true}
+  if((_re.bad||_re.missing)&&_snap.events.length){events=_snap.events;recovered=true}
+  if((_rg.bad||_rg.missing)&&_snap.groceries.length){gitems=_snap.groceries;recovered=true}
 }
 var storageBroken=false;
 function noteMsg(msg){var _n=document.createElement('div');_n.textContent=msg;_n.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18);max-width:90vw;text-align:center';document.body.appendChild(_n);setTimeout(function(){_n.remove()},4500)}
 function persistAll(){
   try{
+    localStorage.setItem(KEY_SNAP,JSON.stringify({t:Date.now(),todos:todos,events:events,groceries:gitems}));
     localStorage.setItem(KEY_T,JSON.stringify(todos));
     localStorage.setItem(KEY_E,JSON.stringify(events));
     localStorage.setItem(KEY_G,JSON.stringify(gitems));
-    localStorage.setItem(KEY_SNAP,JSON.stringify({t:Date.now(),todos:todos,events:events,groceries:gitems}));
     storageBroken=false;
   }catch(e){if(!storageBroken){storageBroken=true;noteMsg("Couldn't save. Browser storage may be full - export a backup using the Backup button.")}}
 }
