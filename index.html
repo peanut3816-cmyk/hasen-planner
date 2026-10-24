@@ -113,12 +113,24 @@ section[hidden]{display:none}
 #bkconfirm{margin-top:10px;font-size:13px;background:#fbfaf8;border:1px solid #e3ded8;border-radius:8px;padding:10px}
 #bkconfirm .bkrow{margin-top:8px}
 #bkstatus{font-size:12px;color:var(--muted);margin:10px 0 0}
+.todo,.eventrow{position:relative}
+.more{border:none;background:none;color:#9d968e;font-size:18px;padding:4px 8px;cursor:pointer;flex:none;line-height:1}
+.rmenu{position:absolute;right:8px;top:calc(100% - 4px);background:#fff;border:1px solid #e3ded8;border-radius:10px;box-shadow:0 4px 16px rgba(30,28,26,.14);padding:4px;z-index:20;display:flex;flex-direction:column;min-width:110px}
+.rmenu button{border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-align:left;padding:9px 12px;border-radius:7px;cursor:pointer}
+.rmenu button:active{background:#f6f4f1}
+.rmenu button[data-act=del]{color:#b91c1c}
+.edbtns{display:flex;gap:6px;flex:none;align-items:center}
+.edbtns .edit{padding:8px 12px}
+.todo.editing,.eventrow.editing{flex-wrap:wrap;row-gap:8px}
+.todo.editing .edcol,.eventrow.editing .edcol{flex:1 1 calc(100% - 38px)}
+.todo.editing .mvcol,.eventrow.editing .mvcol{flex-direction:row;align-items:center;order:3}
+.todo.editing .edbtns,.eventrow.editing .edbtns{order:4;margin-left:auto}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>Hasen's Planner</h1>
+  <h1 id="apptitle">To-dos</h1>
   <button class="bkbtn" id="bktoggle" aria-expanded="false">Backup</button>
 </header>
 <div class="card" id="bkpanel" hidden>
@@ -140,7 +152,7 @@ section[hidden]{display:none}
     <button class="navbtn" id="dnext">›</button>
   </div>
   <button class="todaypill" id="gotoday" hidden>Back to today</button>
-  <div class="card">
+  <div class="card" id="pcard">
     <div id="ptext" style="font-weight:700"></div>
     <div class="pbar"><div class="pfill" id="pfill"></div></div>
   </div>
@@ -168,7 +180,6 @@ section[hidden]{display:none}
     </div>
     <div class="grid" id="grid"></div>
   </div>
-  <div id="events"></div>
   <div class="addrow" style="margin-bottom:8px">
     <input type="text" id="einput" placeholder="Add to this day" autocomplete="off">
     <button class="btn" id="eadd">+</button>
@@ -185,6 +196,7 @@ section[hidden]{display:none}
     <span class="dash">–</span>
     <input type="time" id="eend">
   </div>
+  <div id="events"></div>
 </section>
 
 <section id="view-groc" hidden>
@@ -241,17 +253,19 @@ function keyOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDa
 function dayFromKey(k){var p=k.split('-');return new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10))}
 var today=new Date();
 var sel=keyOf(today);
-var curCat='per';
+var curCat='';
 var editId=null;
 var editTid=null;
 var editGid=null;
+var menuId=null;
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var DOWS=['S','M','T','W','T','F','S'];
 var WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var i,t;
 for(i=0;i<todos.length;i++){t=todos[i];
   if(!t.date)   t.date=keyOf(today);
-  if(!CATS[t.cat]) t.cat='per';
+  if(t.cat===undefined||t.cat===null)t.cat='per';
+  if(t.cat!==''&&!CATS[t.cat])t.cat='per';
   if(!PRIS[t.pri]) t.pri='md';
 }
 var undoTimer=null;
@@ -308,12 +322,13 @@ function fmtLabel(k){var d=dayFromKey(k);return WDAYS[d.getDay()]+' '+d.getDate(
 var catOpen=false;
 function renderChips(){
   var cur=CATS[curCat],k;
-  var html='<button class="chip on" data-act="catmenu"><span class="cd" style="background:'+cur.color+'"></span>'+'Category: '+cur.label+' <span class="caret">'+(catOpen?'\u25b4':'\u25be')+'</span></button>';
+  var html='<button class="chip on" data-act="catmenu">'+(cur?cur.label:'Choose a category')+' <span class="caret">'+(catOpen?'\u25b4':'\u25be')+'</span></button>';
   if(catOpen){
     html+='<div class="catmenu">';
     for(k in CATS){
-      html+='<button class="chip'+(curCat===k?' on':'')+'" data-cat="'+k+'"><span class="cd" style="background:'+CATS[k].color+'"></span>'+CATS[k].label+'</button>';
+      html+='<button class="chip'+(curCat===k?' on':'')+'" data-cat="'+k+'">'+CATS[k].label+'</button>';
     }
+    html+='<button class="chip'+(curCat===''?' on':'')+'" data-cat="">No category</button>';
     html+='</div>';
   }
   $('#catrow').innerHTML=html;
@@ -321,7 +336,8 @@ function renderChips(){
 function renderProgress(){
   var rows=todos.filter(function(x){return x.date===sel});
   var n=rows.length,done=rows.filter(function(x){return x.done}).length;
-  $('#ptext').textContent=n?(done+' of '+n+' done'):'No tasks yet';
+  $('#pcard').hidden=(n===0);
+  $('#ptext').textContent=done+' of '+n+' done';
   $('#pfill').style.width=n?Math.round(100*done/n)+'%':'0%';
 }
 function priOptions(p){
@@ -341,7 +357,7 @@ function moveTodo(id,dir,date){
   save();
 }
 function catOptions(cat){
-  var h='';
+  var h='<option value=""'+(cat===''?' selected':'')+'>No category</option>';
   for(var k in CATS){h+='<option value="'+k+'"'+(cat===k?' selected':'')+'>'+CATS[k].label+'</option>'}
   return h;
 }
@@ -351,7 +367,7 @@ function taskEditRow(t){
     '<div class="edcol"><input type="text" class="eetext" value="'+esc(t.text)+'">'+
     '<div class="edtimes"><select class="eecat">'+catOptions(t.cat)+'</select><select class="eepri">'+priOptions(t.pri)+'</select></div></div>'+
     '<div class="mvcol"><button class="mv" data-act="up">▲</button><button class="mv" data-act="dn">▼</button></div>'+
-    '<button class="btn tiny" data-act="save">✓</button><button class="del" data-act="cancel">↩</button>'+
+    '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div>'+
     '</div>';
 }
 var doneOpenT=false,doneOpenG=false,doneOpenC=false;
@@ -365,9 +381,9 @@ function taskRow(t){
   return '<div class="todo'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
     '<div class="check" data-act="toggle">'+(t.done?'\u2713':'')+'</div>'+
     '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
-    '<span class="tag" style="background:'+CATS[t.cat].bg+';color:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>'+
+    (t.cat&&CATS[t.cat]?'<span class="tag" style="background:'+CATS[t.cat].bg+';color:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>':'')+
     '<div class="txt">'+esc(t.text)+'</div>'+
-    '<button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
+    '<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===t.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
 }
 function renderTodos(){
   $('#todolabel').textContent=fmtLabel(sel);
@@ -394,9 +410,9 @@ function renderDay(){
         '<div class="edcol"><input type="text" class="eetext" value="'+esc(e.text)+'">'+
         '<div class="edtimes"><input type="date" class="eedate" value="'+esc(e.date)+'"></div>'+
         '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">–</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
-        '<button class="btn tiny" data-act="save">✓</button><button class="del" data-act="cancel">↩</button><button class="del" data-act="del">✕</button></div>';
+        '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div></div>';
     } else {
-      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
+      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
     }
   }
   var tks=todos.filter(function(x){return x.date===sel});
@@ -405,7 +421,7 @@ function renderDay(){
     if(r.id===editTid){
       row=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
     } else {
-      row='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
+      row='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span>'+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+'<div class="txt">'+esc(r.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
     }
     if(r.done){doneHtml+=row;nd++}else html+=row;
   }
@@ -481,6 +497,8 @@ $('#catrow').addEventListener('click',function(e){
 $('#list').addEventListener('click',function(e){
   var row=e.target.closest('.todo'); if(!row)return;
   var id=row.getAttribute('data-id');
+  if(e.target.closest('[data-act=menu]')){menuId=(menuId===id?null:id);renderTodos();return}
+  menuId=null;
   if(e.target.closest('[data-act=toggle]')){
     for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].done=!todos[i].done;
     save(); renderTodos();
@@ -506,6 +524,8 @@ $('#cleardone').addEventListener('click',function(){
 $('#events').addEventListener('click',function(e){
   var row=e.target.closest('.eventrow'); if(!row)return;
   var id=row.getAttribute('data-id'),kind=row.getAttribute('data-kind');
+  if(e.target.closest('[data-act=menu]')){menuId=(menuId===id?null:id);renderCal();return}
+  menuId=null;
   if(e.target.closest('[data-act=save]')){
     var txt=row.querySelector('.eetext').value.trim(); if(!txt)return;
     if(kind==='ev'){
@@ -571,12 +591,12 @@ function renderGrocery(){
   for(j=0;j<gitems.length;j++){g=gitems[j];
     var row;
     if(g.id===editGid){
-      row='<div class="todo editing" data-id="'+g.id+'"><div class="edcol"><input type="text" class="eetext" value="'+esc(g.text)+'"></div><button class="btn tiny" data-act="save">\u2713</button><button class="del" data-act="cancel">\u21a9</button></div>';
+      row='<div class="todo editing" data-id="'+g.id+'"><div class="edcol"><input type="text" class="eetext" value="'+esc(g.text)+'"></div><div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div></div>';
     } else {
       row='<div class="todo'+(g.done?' done':'')+'" data-id="'+g.id+'">'+
         '<div class="check" data-act="toggle">'+(g.done?'\u2713':'')+'</div>'+
         '<div class="txt">'+esc(g.text)+'</div>'+
-        '<button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
+        '<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===g.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
     }
     if(g.done){doneHtml+=row;nd++}else html+=row;
   }
@@ -601,6 +621,8 @@ $('#glist').addEventListener('keydown',function(e){
 $('#glist').addEventListener('click',function(e){
   var row=e.target.closest('.todo'); if(!row)return;
   var id=row.getAttribute('data-id'),j;
+  if(e.target.closest('[data-act=menu]')){menuId=(menuId===id?null:id);renderGrocery();return}
+  menuId=null;
   if(e.target.closest('[data-act=save]')){
     var v=row.querySelector('.eetext').value.trim(); if(!v)return;
     for(j=0;j<gitems.length;j++)if(gitems[j].id===id)gitems[j].text=v;
@@ -640,7 +662,7 @@ bktoggle.addEventListener('click',function(){bkpanel.hidden=!bkpanel.hidden;bkto
 function cleanTodo(x){
   if(!x||typeof x.text!=='string')return null;
   var d=(typeof x.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.date))?x.date:keyOf(new Date());
-  return{id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),text:x.text.slice(0,500),done:!!x.done,date:d,cat:CATS[x.cat]?x.cat:'per',pri:PRIS[x.pri]?x.pri:'md'};
+  return{id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),text:x.text.slice(0,500),done:!!x.done,date:d,cat:(x.cat===''||CATS[x.cat])?x.cat:'per',pri:PRIS[x.pri]?x.pri:'md'};
 }
 function cleanEvent(x){
   if(!x||typeof x.text!=='string')return null;
@@ -708,6 +730,8 @@ function switchTab(t){
   $('#tab-todos').className=(t==='todos'?'on':'');
   $('#tab-cal').className=(t==='cal'?'on':'');
   $('#tab-groc').className=(t==='groc'?'on':'');
+  $('#apptitle').textContent=(t==='todos'?'To-dos':t==='cal'?'Calendar':'Groceries');
+  menuId=null;
   renderAll();
 }
 $('#tab-todos').addEventListener('click',function(){switchTab('todos')});
