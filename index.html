@@ -706,7 +706,16 @@ $('#events').addEventListener('click',function(e){
     menuId=null; save(); renderCal();
   } else if(e.target.closest('[data-act=del]')){
     editId=null; editTid=null;
-    if(kind==='ev'){events=events.filter(function(x){return x.id!==id});save()}
+    if(kind==='ev'){
+      var di=-1,ditem=null;
+      for(i=0;i<events.length;i++)if(events[i].id===id){di=i;ditem=events[i];break}
+      if(ditem){
+        events.splice(di,1); save();
+        showUndo(repOf(ditem)?'Event series deleted':'Event deleted',function(){
+          events.splice(Math.min(di,events.length),0,ditem); save(); renderCal();
+        });
+      }
+    }
     else{deleteTodo(id)}
     renderCal();
   } else if(e.target.closest('[data-act=edit]')){
