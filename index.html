@@ -142,6 +142,11 @@ section[hidden]{display:none}
 .tltime{color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap;min-width:88px;flex:none}
 .tldur{color:#9d968e;font-size:12px;margin-left:auto;white-space:nowrap;flex:none}
 .tlgap{color:#9d968e;font-size:12px;padding:2px 0 2px 98px;font-style:italic}
+.twrap{display:inline-flex;align-items:center;gap:4px;flex:none}
+.timesel{border:1px solid var(--line);border-radius:8px;padding:8px 6px;font:inherit;background:#fff;color:var(--ink);width:62px;flex:none}
+.timex{border:1px solid var(--line);border-radius:8px;padding:8px 6px;font:inherit;background:#fff;color:var(--ink);width:48px;flex:none;text-align:center}
+.edtimes .timesel,.edtimes .timex{flex:none}
+.timesel:disabled{color:#c8c2ba;background:#f6f4f1}
 </style>
 </head>
 <body>
@@ -210,9 +215,9 @@ section[hidden]{display:none}
     <button type="button" class="timelink" id="timetoggle" hidden>Add time</button>
   </div>
   <div class="addrow2" id="timerow" hidden>
-    <input type="time" id="etimeinput">
+    <span class="twrap" id="estartwrap"></span>
     <span class="dash">–</span>
-    <input type="time" id="eend">
+    <span class="twrap" id="eendwrap"></span>
   </div>
   <button class="small" id="tltoggle" hidden>Timeline</button>
   <div class="card" id="tlcard" hidden></div>
@@ -465,7 +470,7 @@ function renderDay(){
       html+='<div class="eventrow editing" data-id="'+e.id+'" data-kind="ev">'+
         '<div class="edcol"><input type="text" class="eetext" value="'+esc(e.text)+'">'+
         '<div class="edtimes"><input type="date" class="eedate" value="'+esc(e.date)+'"><select class="eerep">'+repOptions(repOf(e))+'</select></div>'+
-        '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">\u2013</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
+        '<div class="edtimes"><span class="twrap estart">'+timeFieldHTML(e.time||'')+'</span><span class="dash">\u2013</span><span class="twrap eend">'+timeFieldHTML(e.end||'')+'</span></div></div>'+
         '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div></div>';
     } else {
       html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span>'+(repOf(e)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(e)?'Delete series':'Delete')+'</button></div>':'')+'</div>';
@@ -485,7 +490,10 @@ function renderDay(){
   if(doneHtml)html+='<details class="donesec"'+(doneOpenC?' open':'')+'><summary><span class="dcaret">\u25be</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div></details>';
   el.innerHTML=html||'<div class="empty">Nothing planned</div>';
   bindDoneSec(el,'c');
+  var tws=el.querySelectorAll('.twrap');
+  for(k=0;k<tws.length;k++)wireTimeWrap(tws[k]);
 }
+buildAddTime();
 function toMin(s){var p=s.split(':');return parseInt(p[0],10)*60+parseInt(p[1],10)}
 function fmtDur(m){var h=Math.floor(m/60),mm=m%60,out='';if(h)out+=h+'h';if(mm)out+=(out?' ':'')+mm+'m';return out||'0m'}
 function renderTimeline(){
@@ -542,15 +550,54 @@ function addTodo(){
   todos.push({id:Date.now()+''+Math.floor(Math.random()*999),text:v,done:false,date:sel,cat:curCat,pri:'md'});
   $('#tinput').value=''; save(); renderTodos();
 }
+function minOptions(mm){
+  var quarters=['00','15','30','45'],h='';
+  for(var q=0;q<4;q++)h+='<option value="'+quarters[q]+'"'+(mm===quarters[q]?' selected':'')+'>'+quarters[q]+'</option>';
+  if(mm&&quarters.indexOf(mm)<0)h+='<option value="'+mm+'" selected>'+mm+'</option>';
+  h+='<option value="x">other\u2026</option>';
+  return h;
+}
+function timeFieldHTML(val){
+  var hh=(val&&val.indexOf(':')>-1)?val.split(':')[0]:'',mm=hh?val.split(':')[1]:'';
+  var h='<select class="timesel" data-r="h" aria-label="Hour"><option value="">--</option>';
+  for(var i=0;i<24;i++){var v=pad(i);h+='<option value="'+v+'"'+(hh===v?' selected':'')+'>'+v+'</option>'}
+  h+='</select><span class="dash">:</span>';
+  h+='<select class="timesel" data-r="m" aria-label="Minutes"'+(hh?'':' disabled')+'>';
+  h+=hh?minOptions(mm):'<option value="">--</option>';
+  h+='</select>';
+  h+='<input type="text" inputmode="numeric" maxlength="2" class="timex" data-r="mx" placeholder="mm" style="display:none" aria-label="Exact minutes">';
+  return h;
+}
+function wireTimeWrap(wrap){
+  var h=wrap.querySelector('[data-r=h]'),m=wrap.querySelector('[data-r=m]'),mx=wrap.querySelector('[data-r=mx]');
+  h.addEventListener('change',function(){
+    if(!h.value){m.disabled=true;m.innerHTML='<option value="">--</option>';m.value='';mx.style.display='none'}
+    else{m.disabled=false;if(m.disabled||!m.value||m.options.length<2){m.innerHTML=minOptions('00')}m.value=m.value||'00';mx.style.display=(m.value==='x')?'':'none'}
+  });
+  m.addEventListener('change',function(){
+    if(m.value==='x'){mx.style.display='';mx.value='';mx.focus()}
+    else mx.style.display='none';
+  });
+}
+function readTimeWrap(wrap){
+  var h=wrap.querySelector('[data-r=h]').value; if(!h)return '';
+  var m=wrap.querySelector('[data-r=m]'),v=m.value;
+  if(v==='x'){var n=parseInt(wrap.querySelector('[data-r=mx]').value.trim(),10);if(isNaN(n)||n<0)n=0;if(n>59)n=59;v=pad(n)}
+  return h+':'+v;
+}
+function buildAddTime(){
+  $('#estartwrap').innerHTML=timeFieldHTML('');wireTimeWrap($('#estartwrap'));
+  $('#eendwrap').innerHTML=timeFieldHTML('');wireTimeWrap($('#eendwrap'));
+}
 var calKind='task';
 function addCalItem(){
   var v=$('#einput').value.trim(); if(!v)return;
   if(calKind==='task'){
     todos.push({id:Date.now()+''+Math.floor(Math.random()*999),text:v,done:false,date:sel,cat:curCat,pri:'md'});
   } else {
-    events.push({id:Date.now()+''+Math.floor(Math.random()*999),date:sel,text:v,time:$('#etimeinput').value||'',end:$('#eend').value||''});
+    events.push({id:Date.now()+''+Math.floor(Math.random()*999),date:sel,text:v,time:readTimeWrap($('#estartwrap')),end:readTimeWrap($('#eendwrap'))});
   }
-  $('#einput').value=''; $('#etimeinput').value=''; $('#eend').value='';
+  $('#einput').value=''; buildAddTime();
   $('#timerow').hidden=true; $('#timetoggle').textContent='Add time';
   save(); renderAll();
 }
@@ -626,7 +673,7 @@ $('#events').addEventListener('click',function(e){
       var nd=row.querySelector('.eedate').value;
       var nre=row.querySelector('.eerep').value;
       for(i=0;i<events.length;i++)if(events[i].id===id){var ev=events[i];
-        ev.text=txt;ev.time=row.querySelector('.eestart').value||'';ev.end=row.querySelector('.eeend').value||'';if(nd)ev.date=nd;
+        ev.text=txt;ev.time=readTimeWrap(row.querySelector('.estart'));ev.end=readTimeWrap(row.querySelector('.eend'));if(nd)ev.date=nd;
         if(nre)ev.rep=nre;else delete ev.rep;
       }
       editId=null;
