@@ -664,7 +664,7 @@ $('#events').addEventListener('click',function(e){
     if(kind==='tsk')editTid=id; else editId=id;
     renderCal();
   } else if(kind==='ev'){
-    editId=id; renderCal();
+    if(!row.classList.contains('editing')&&!e.target.closest('input,select,button,a')){editId=id; renderCal()}
   } else if(kind==='tsk'&&(e.target.closest('[data-act=up]')||e.target.closest('[data-act=dn]'))){
     moveTodo(id,e.target.closest('[data-act=up]')?'up':'dn',sel); renderCal();
   } else if(kind==='tsk'&&e.target.closest('.txt')){
