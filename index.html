@@ -65,6 +65,8 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .day.sel{background:var(--mint);color:#fff;border-color:var(--mint)}
 .day .dot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:999px;background:var(--mint)}
 .day.sel .dot{background:#fff}
+#monthbox[hidden]{display:none}
+.datebtn{font:inherit;font-size:16px;font-weight:600;min-width:170px;text-align:center;background:none;border:none;color:var(--ink);cursor:pointer;padding:8px 4px}
 .daylabel{margin:14px 16px 4px;font-weight:600}
 .etime{background:#e3efec;color:var(--mint);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;flex:none;white-space:nowrap}
 .etime.notime{background:#f6f4f1;color:var(--muted)}
@@ -118,7 +120,7 @@ section[hidden]{display:none}
     <h2 id="todolabel"></h2>
     <button class="navbtn" id="dnext">›</button>
   </div>
-  <button class="todaypill" id="gotoday" hidden>back to today</button>
+  <button class="todaypill" id="gotoday" hidden>Back to today</button>
   <div class="card">
     <div id="ptext" style="font-weight:700"></div>
     <div class="pbar"><div class="pfill" id="pfill"></div></div>
@@ -129,18 +131,24 @@ section[hidden]{display:none}
     <button class="btn" id="tadd">+</button>
   </div>
   <div id="list"></div>
-  <button class="small" id="cleardone" hidden>clear finished tasks</button>
+  <button class="small" id="cleardone" hidden>Clear finished tasks</button>
 </section>
 
 <section id="view-cal" hidden>
-  <div class="calhead">
-    <button class="navbtn" id="mprev">‹</button>
-    <h2 id="mlabel"></h2>
-    <button class="navbtn" id="mnext">›</button>
+  <div class="daterow">
+    <button class="navbtn" id="cprev" aria-label="Previous day">‹</button>
+    <button class="datebtn" id="cdatebtn" aria-expanded="false"><span id="clabel"></span> <span class="caret" id="ccaret">▾</span></button>
+    <button class="navbtn" id="cnext" aria-label="Next day">›</button>
   </div>
-  <button class="todaypill" id="gotodaycal" hidden>back to today</button>
-  <div class="grid" id="grid"></div>
-  <div class="daylabel" id="daylabel"></div>
+  <button class="todaypill" id="gotodaycal" hidden>Back to today</button>
+  <div id="monthbox" hidden>
+    <div class="calhead">
+      <button class="navbtn" id="mprev" aria-label="Previous month">‹</button>
+      <h2 id="mlabel"></h2>
+      <button class="navbtn" id="mnext" aria-label="Next month">›</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
   <div id="events"></div>
   <div class="addrow" style="margin-bottom:8px">
     <input type="text" id="einput" placeholder="Add to this day" autocomplete="off">
@@ -151,7 +159,7 @@ section[hidden]{display:none}
       <button type="button" data-kind="task" class="on">Task</button>
       <button type="button" data-kind="ev">Event</button>
     </div>
-    <button type="button" class="timelink" id="timetoggle" hidden>add time</button>
+    <button type="button" class="timelink" id="timetoggle" hidden>Add time</button>
   </div>
   <div class="addrow2" id="timerow" hidden>
     <input type="time" id="etimeinput">
@@ -166,7 +174,7 @@ section[hidden]{display:none}
     <button class="btn" id="gadd">+</button>
   </div>
   <div id="glist"></div>
-  <button class="small" id="clearcheck" hidden>clear checked items</button>
+  <button class="small" id="clearcheck" hidden>Clear checked items</button>
 </section>
 </div>
 
@@ -179,8 +187,8 @@ section[hidden]{display:none}
 <script>
 var $=function(s){return document.querySelector(s)};
 var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events',KEY_G='hasen_planner_groceries';
-var CATS={work:{label:'work',color:'#6d5a9e',bg:'#ece7f6'},biz:{label:'business',color:'#3d7a6f',bg:'#dfeeea'},per:{label:'personal',color:'#a5741f',bg:'#f8ecd6'},exe:{label:'exercise',color:'#4f7a58',bg:'#e2efe5'},stu:{label:'study',color:'#4a6d8c',bg:'#e1edf5'},cho:{label:'chores',color:'#9c5a86',bg:'#f5e3ef'}};
-var PRIS={hi:{label:'high',color:'#dc2626'},md:{label:'normal',color:'#9d968e'},lo:{label:'low',color:'#d8d2ca'}};
+var CATS={work:{label:'Work',color:'#6d5a9e',bg:'#ece7f6'},biz:{label:'Business',color:'#3d7a6f',bg:'#dfeeea'},per:{label:'Personal',color:'#a5741f',bg:'#f8ecd6'},exe:{label:'Exercise',color:'#4f7a58',bg:'#e2efe5'},stu:{label:'Study',color:'#4a6d8c',bg:'#e1edf5'},cho:{label:'Chores',color:'#9c5a86',bg:'#f5e3ef'}};
+var PRIS={hi:{label:'High',color:'#dc2626'},md:{label:'Normal',color:'#9d968e'},lo:{label:'Low',color:'#d8d2ca'}};
 var todos=[],events=[],gitems=[];
 try{gitems=JSON.parse(localStorage.getItem(KEY_G)||'[]')||[]}catch(e){gitems=[]}
 if(!Array.isArray(gitems))gitems=[];
@@ -255,7 +263,7 @@ try{
   }
   localStorage.setItem(KEY_L,tk);
 }catch(e){}
-if(moved){var _ts=document.createElement('div');_ts.textContent='moved '+moved+' unfinished task'+(moved===1?'':'s')+' to today';_ts.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18)';document.body.appendChild(_ts);setTimeout(function(){_ts.remove()},3500)}
+if(moved){var _ts=document.createElement('div');_ts.textContent='Moved '+moved+' unfinished task'+(moved===1?'':'s')+' to today';_ts.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18)';document.body.appendChild(_ts);setTimeout(function(){_ts.remove()},3500)}
 
 function fmtLabel(k){var d=dayFromKey(k);return WDAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)}
 
@@ -321,7 +329,7 @@ function taskRow(t){
     '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
     '<span class="tag" style="background:'+CATS[t.cat].bg+';color:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>'+
     '<div class="txt">'+esc(t.text)+'</div>'+
-    '<button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
+    '<button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
 }
 function renderTodos(){
   $('#todolabel').textContent=fmtLabel(sel);
@@ -350,7 +358,7 @@ function renderDay(){
         '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">–</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
         '<button class="btn tiny" data-act="save">✓</button><button class="del" data-act="cancel">↩</button><button class="del" data-act="del">✕</button></div>';
     } else {
-      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'all day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
+      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
     }
   }
   var tks=todos.filter(function(x){return x.date===sel});
@@ -359,7 +367,7 @@ function renderDay(){
     if(r.id===editTid){
       row=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
     } else {
-      row='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
+      row='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span><span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span><div class="txt">'+esc(r.text)+'</div><button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
     }
     if(r.done){doneHtml+=row;nd++}else html+=row;
   }
@@ -367,6 +375,7 @@ function renderDay(){
   el.innerHTML=html||'<div class="empty">Nothing planned</div>';
   bindDoneSec(el,'c');
 }
+var calOpen=false;
 function renderCal(){
   var sd=dayFromKey(sel),cy=sd.getFullYear(),cm=sd.getMonth();
   $('#mlabel').textContent=MONTHS[cm]+' '+cy;
@@ -384,7 +393,10 @@ function renderCal(){
     html+='<div class="'+cls+'" data-key="'+k+'">'+d+(cls.indexOf('hasdot')>-1?'<span class="dot"></span>':'')+'</div>';
   }
   $('#grid').innerHTML=html;
-  $('#daylabel').textContent=fmtLabel(sel);
+  $('#clabel').textContent=fmtLabel(sel);
+  $('#monthbox').hidden=!calOpen;
+  $('#ccaret').textContent=calOpen?'\u25b4':'\u25be';
+  $('#cdatebtn').setAttribute('aria-expanded',calOpen?'true':'false');
   $('#gotodaycal').hidden=(sel===keyOf(today));
   renderDay();
 }
@@ -404,7 +416,7 @@ function addCalItem(){
     events.push({id:Date.now()+''+Math.floor(Math.random()*999),date:sel,text:v,time:$('#etimeinput').value||'',end:$('#eend').value||''});
   }
   $('#einput').value=''; $('#etimeinput').value=''; $('#eend').value='';
-  $('#timerow').hidden=true; $('#timetoggle').textContent='add time';
+  $('#timerow').hidden=true; $('#timetoggle').textContent='Add time';
   save(); renderAll();
 }
 $('#tadd').addEventListener('click',addTodo);
@@ -417,11 +429,11 @@ $('#kindseg').addEventListener('click',function(e){
   var bs=$('#kindseg').querySelectorAll('button'),q;
   for(q=0;q<bs.length;q++)bs[q].className=(bs[q]===b?'on':'');
   $('#timetoggle').hidden=(calKind!=='ev');
-  if(calKind!=='ev'){$('#timerow').hidden=true;$('#timetoggle').textContent='add time'}
+  if(calKind!=='ev'){$('#timerow').hidden=true;$('#timetoggle').textContent='Add time'}
 });
 $('#timetoggle').addEventListener('click',function(){
   var tr=$('#timerow'); tr.hidden=!tr.hidden;
-  this.textContent=tr.hidden?'add time':'no time';
+  this.textContent=tr.hidden?'Add time':'No time';
 });
 $('#catrow').addEventListener('click',function(e){
   if(e.target.closest('[data-act=catmenu]')){catOpen=!catOpen;renderChips();return}
@@ -498,7 +510,7 @@ $('#events').addEventListener('keydown',function(e){
 });
 $('#grid').addEventListener('click',function(e){
   var c=e.target.closest('.day'); if(!c||!c.getAttribute('data-key'))return;
-  sel=c.getAttribute('data-key'); editId=null; editTid=null; renderAll();
+  sel=c.getAttribute('data-key'); editId=null; editTid=null; calOpen=false; renderAll();
 });
 function shiftMonth(n){
   var d=dayFromKey(sel),day=d.getDate();
@@ -507,12 +519,15 @@ function shiftMonth(n){
   d.setDate(Math.min(day,dim));
   sel=keyOf(d); editId=null; editTid=null; renderAll();
 }
+$('#cdatebtn').addEventListener('click',function(){calOpen=!calOpen;renderCal()});
+$('#cprev').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()-1);sel=keyOf(d);editId=null;editTid=null;renderAll()});
+$('#cnext').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()+1);sel=keyOf(d);editId=null;editTid=null;renderAll()});
 $('#mprev').addEventListener('click',function(){shiftMonth(-1)});
 $('#mnext').addEventListener('click',function(){shiftMonth(1)});
 $('#dprev').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()-1);sel=keyOf(d);renderAll()});
 $('#dnext').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()+1);sel=keyOf(d);renderAll()});
 $('#gotoday').addEventListener('click',function(){sel=keyOf(today);renderAll()});
-$('#gotodaycal').addEventListener('click',function(){sel=keyOf(today);renderAll()});
+$('#gotodaycal').addEventListener('click',function(){sel=keyOf(today);editId=null;editTid=null;calOpen=false;renderAll()});
 function renderGrocery(){
   var el=$('#glist'),html='',doneHtml='',j,g,nd=0;
   for(j=0;j<gitems.length;j++){g=gitems[j];
@@ -523,7 +538,7 @@ function renderGrocery(){
       row='<div class="todo'+(g.done?' done':'')+'" data-id="'+g.id+'">'+
         '<div class="check" data-act="toggle">'+(g.done?'\u2713':'')+'</div>'+
         '<div class="txt">'+esc(g.text)+'</div>'+
-        '<button class="edit" data-act="edit">edit</button><button class="del" data-act="del">✕</button></div>';
+        '<button class="edit" data-act="edit">Edit</button><button class="del" data-act="del">✕</button></div>';
     }
     if(g.done){doneHtml+=row;nd++}else html+=row;
   }
@@ -576,6 +591,7 @@ $('#clearcheck').addEventListener('click',function(){
   });
 });
 function switchTab(t){
+  calOpen=false;
   $('#view-todos').hidden=(t!=='todos');
   $('#view-cal').hidden=(t!=='cal');
   $('#view-groc').hidden=(t!=='groc');
