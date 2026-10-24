@@ -125,6 +125,22 @@ section[hidden]{display:none}
 .todo.editing .edcol,.eventrow.editing .edcol{flex:1 1 calc(100% - 38px)}
 .todo.editing .mvcol,.eventrow.editing .mvcol{flex-direction:row;align-items:center;order:3}
 .todo.editing .edbtns,.eventrow.editing .edbtns{order:4;margin-left:auto}
+.todo .rep,.eventrow .rep{color:#9d968e;font-size:13px;flex:none;line-height:1}
+.notebtn{border:none;background:none;color:#9d968e;font:inherit;font-size:11px;font-weight:600;padding:2px 4px;cursor:pointer;flex:none;text-decoration:underline}
+.todo.wrapnote,.eventrow.wrapnote{flex-wrap:wrap}
+.todonote{flex:1 1 100%;font-size:13px;color:var(--muted);padding:2px 0 2px 34px;white-space:pre-wrap;font-weight:400}
+.erow{flex-wrap:wrap}
+.erow .txt{flex:1 1 auto;min-width:0}
+.erow .eact{flex:1 1 100%;display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.ebtn{border:1px solid var(--line);background:#fff;color:var(--teal);font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;flex:none}
+.eact input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);width:126px;flex:none;font-size:13px}
+.emuted{color:#9d968e;font-size:12px;font-weight:400}
+#tlcard .bktitle{font-weight:700;margin-bottom:6px}
+.tlrow{display:flex;gap:10px;align-items:baseline;padding:4px 0;font-size:14px;border-top:1px solid #f0ede9}
+.tlrow.first{border-top:none}
+.tltime{color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap;min-width:88px;flex:none}
+.tldur{color:#9d968e;font-size:12px;margin-left:auto;white-space:nowrap;flex:none}
+.tlgap{color:#9d968e;font-size:12px;padding:2px 0 2px 98px;font-style:italic}
 </style>
 </head>
 <body>
@@ -161,6 +177,7 @@ section[hidden]{display:none}
     <input type="text" id="tinput" placeholder="Add a task" autocomplete="off">
     <button class="btn" id="tadd">+</button>
   </div>
+  <div id="earlier"></div>
   <div id="list"></div>
   <button class="small" id="cleardone" hidden>Clear finished tasks</button>
 </section>
@@ -196,6 +213,8 @@ section[hidden]{display:none}
     <span class="dash">–</span>
     <input type="time" id="eend">
   </div>
+  <button class="small" id="tltoggle" hidden>Timeline</button>
+  <div class="card" id="tlcard" hidden></div>
   <div id="events"></div>
 </section>
 
@@ -251,6 +270,23 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function pad(n){return String(n).padStart(2,'0')}
 function keyOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function dayFromKey(k){var p=k.split('-');return new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10))}
+function repOf(x){return (x&&(x.rep==='day'||x.rep==='week'||x.rep==='month'))?x.rep:''}
+function occursOn(x,k){
+  if(!repOf(x))return x.date===k;
+  if(k<x.date)return false;
+  var d=dayFromKey(k),s=dayFromKey(x.date),r=repOf(x);
+  if(r==='day')return true;
+  if(r==='week')return d.getDay()===s.getDay();
+  var dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  return d.getDate()===Math.min(s.getDate(),dim);
+}
+function isDoneOn(t,k){return repOf(t)?!!(t.doneBy&&t.doneBy[k]):!!t.done}
+function toggleDoneOn(t,k){if(repOf(t)){t.doneBy=t.doneBy||{};if(t.doneBy[k])delete t.doneBy[k];else t.doneBy[k]=true}else t.done=!t.done}
+function repOptions(r){
+  var o=[['','Does not repeat'],['day','Every day'],['week','Every week'],['month','Every month']],h='';
+  for(var i=0;i<o.length;i++)h+='<option value="'+o[i][0]+'"'+(r===o[i][0]?' selected':'')+'>'+o[i][1]+'</option>';
+  return h;
+}
 var today=new Date();
 var sel=keyOf(today);
 var curCat='';
@@ -304,18 +340,6 @@ function deleteGrocery(id){
     }
   }
 }
-var KEY_L='hasen_planner_lastday',tk=keyOf(today),moved=0;
-try{
-  var lastday=localStorage.getItem(KEY_L);
-  if(lastday&&lastday<tk){
-    for(i=0;i<todos.length;i++){t=todos[i];
-      if(!t.done&&(t.cat==='work'||t.cat==='biz')&&t.date<tk){t.date=tk;moved++}
-    }
-    if(moved)save();
-  }
-  localStorage.setItem(KEY_L,tk);
-}catch(e){}
-if(moved){var _ts=document.createElement('div');_ts.textContent='Moved '+moved+' unfinished task'+(moved===1?'':'s')+' to today';_ts.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18)';document.body.appendChild(_ts);setTimeout(function(){_ts.remove()},3500)}
 
 function fmtLabel(k){var d=dayFromKey(k);return WDAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)}
 
@@ -334,8 +358,8 @@ function renderChips(){
   $('#catrow').innerHTML=html;
 }
 function renderProgress(){
-  var rows=todos.filter(function(x){return x.date===sel});
-  var n=rows.length,done=rows.filter(function(x){return x.done}).length;
+  var rows=todos.filter(function(x){return occursOn(x,sel)});
+  var n=rows.length,done=rows.filter(function(x){return isDoneOn(x,sel)}).length;
   $('#pcard').hidden=(n===0);
   $('#ptext').textContent=done+' of '+n+' done';
   $('#pfill').style.width=n?Math.round(100*done/n)+'%':'0%';
@@ -363,10 +387,12 @@ function catOptions(cat){
 }
 function taskEditRow(t){
   return '<div class="todo editing" data-id="'+t.id+'">'+
-    '<div class="check" data-act="toggle">'+(t.done?'\u2713':'')+'</div>'+
+    '<div class="check" data-act="toggle">'+(isDoneOn(t,sel)?'\u2713':'')+'</div>'+
     '<div class="edcol"><input type="text" class="eetext" value="'+esc(t.text)+'">'+
-    '<div class="edtimes"><select class="eecat">'+catOptions(t.cat)+'</select><select class="eepri">'+priOptions(t.pri)+'</select></div></div>'+
-    '<div class="mvcol"><button class="mv" data-act="up">▲</button><button class="mv" data-act="dn">▼</button></div>'+
+    '<div class="edtimes"><select class="eecat">'+catOptions(t.cat)+'</select><select class="eepri">'+priOptions(t.pri)+'</select></div>'+
+    '<div class="edtimes"><input type="date" class="eedate2" value="'+esc(t.date)+'" aria-label="Date"><select class="eerep">'+repOptions(repOf(t))+'</select></div>'+
+    '<input type="text" class="eenote" placeholder="Note (optional)" value="'+esc(t.note||'')+'"></div>'+
+    '<div class="mvcol"><button class="mv" data-act="up">\u25b2</button><button class="mv" data-act="dn">\u25bc</button></div>'+
     '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div>'+
     '</div>';
 }
@@ -377,58 +403,111 @@ function bindDoneSec(el,which){
     if(which==='t')doneOpenT=ds.open;else if(which==='g')doneOpenG=ds.open;else doneOpenC=ds.open;
   });
 }
-function taskRow(t){
-  return '<div class="todo'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
-    '<div class="check" data-act="toggle">'+(t.done?'\u2713':'')+'</div>'+
+var noteOpenId=null,earlierOpen=false,tlOpen=false;
+function taskRow(t,k){
+  var tk=keyOf(today);
+  var menu='<div class="rmenu">'+((!repOf(t)&&!t.done&&t.date<tk)?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>';
+  return '<div class="todo'+(isDoneOn(t,k)?' done':'')+(noteOpenId===t.id?' wrapnote':'')+'" data-id="'+t.id+'">'+
+    '<div class="check" data-act="toggle">'+(isDoneOn(t,k)?'\u2713':'')+'</div>'+
     '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
     (t.cat&&CATS[t.cat]?'<span class="tag" style="background:'+CATS[t.cat].bg+';color:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>':'')+
+    (repOf(t)?'<span class="rep">\u21bb</span>':'')+
     '<div class="txt">'+esc(t.text)+'</div>'+
-    '<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===t.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
+    (t.note?'<button class="notebtn" data-act="note">note</button>':'')+
+    '<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===t.id?menu:'')+
+    (noteOpenId===t.id&&t.note?'<div class="todonote">'+esc(t.note)+'</div>':'')+'</div>';
 }
 function renderTodos(){
   $('#todolabel').textContent=fmtLabel(sel);
   $('#gotoday').hidden=(sel===keyOf(today));
-  var el=$('#list'),html='',doneHtml='',rows=todos.filter(function(x){return x.date===sel}),nd=0;
+  var el=$('#list'),html='',doneHtml='',rows=todos.filter(function(x){return occursOn(x,sel)}),nd=0;
   for(i=0;i<rows.length;i++){t=rows[i];
-    var row=(t.id===editTid)?taskEditRow(t):taskRow(t);
-    if(t.done){doneHtml+=row;nd++}else html+=row;
+    var row=(t.id===editTid)?taskEditRow(t):taskRow(t,sel);
+    if(isDoneOn(t,sel)){doneHtml+=row;nd++}else html+=row;
   }
   if(doneHtml)html+='<details class="donesec"'+(doneOpenT?' open':'')+'><summary><span class="dcaret">▾</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div></details>';
   el.innerHTML=html||'<div class="empty">No tasks for this day</div>';
   bindDoneSec(el,'t');
-  $('#cleardone').hidden=!rows.some(function(x){return x.done});
+  $('#cleardone').hidden=!rows.some(function(x){return !repOf(x)&&x.date===sel&&x.done});
   renderProgress();
+  renderEarlier();
 }
+function renderEarlier(){
+  var box=$('#earlier'),tk=keyOf(today);
+  if(sel!==tk){box.innerHTML='';return}
+  var old=[],i;
+  for(i=0;i<todos.length;i++){t=todos[i];if(!repOf(t)&&!t.done&&t.date<tk)old.push(t)}
+  if(!old.length){box.innerHTML='';return}
+  var h='<details class="donesec"'+(earlierOpen?' open':'')+'><summary><span class="dcaret">\u25be</span>Earlier unfinished ('+old.length+')</summary><div class="donerows">';
+  for(i=0;i<old.length;i++){t=old[i];
+    h+='<div class="todo erow" data-id="'+t.id+'"><span class="pri" style="background:'+PRIS[t.pri].color+'"></span><div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><button class="ebtn" data-act="mtoday">Move to today</button><input type="date" class="emove" value="'+tk+'" aria-label="Pick a date"><button class="ebtn" data-act="mdate">Move</button></div></div>';
+  }
+  box.innerHTML=h+'</div></details>';
+  var ds=box.querySelector('.donesec');
+  if(ds)ds.addEventListener('toggle',function(){earlierOpen=ds.open});
+}
+$('#earlier').addEventListener('click',function(e){
+  var row=e.target.closest('.erow'); if(!row)return;
+  if(!e.target.closest('[data-act]'))return;
+  var id=row.getAttribute('data-id'),i,to=keyOf(today);
+  if(e.target.closest('[data-act=mdate]')){var v=row.querySelector('.emove').value; if(!v)return; to=v}
+  for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].date=to;
+  save(); renderAll();
+});
 function renderDay(){
   var el=$('#events'),html='',doneHtml='',k,e,r,nd=0;
-  var evs=events.filter(function(x){return x.date===sel});
+  var evs=events.filter(function(x){return occursOn(x,sel)});
   evs.sort(function(a,b){var x=a.time||'99:99',y=b.time||'99:99';return x<y?-1:x>y?1:0});
   for(k=0;k<evs.length;k++){e=evs[k];
     var tt=e.time?(e.end?(e.time+'-'+e.end):e.time):'';
     if(e.id===editId){
       html+='<div class="eventrow editing" data-id="'+e.id+'" data-kind="ev">'+
         '<div class="edcol"><input type="text" class="eetext" value="'+esc(e.text)+'">'+
-        '<div class="edtimes"><input type="date" class="eedate" value="'+esc(e.date)+'"></div>'+
-        '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">–</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
+        '<div class="edtimes"><input type="date" class="eedate" value="'+esc(e.date)+'"><select class="eerep">'+repOptions(repOf(e))+'</select></div>'+
+        '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">\u2013</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
         '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div></div>';
     } else {
-      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span><div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
+      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span>'+(repOf(e)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
     }
   }
-  var tks=todos.filter(function(x){return x.date===sel});
+  var tks=todos.filter(function(x){return occursOn(x,sel)});
   for(k=0;k<tks.length;k++){r=tks[k];
     var row;
     if(r.id===editTid){
       row=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
     } else {
-      row='<div class="eventrow'+(r.done?' done':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(r.done?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span>'+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+'<div class="txt">'+esc(r.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
+      var rmenu='<div class="rmenu">'+((!repOf(r)&&!r.done&&r.date<keyOf(today))?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>';
+      row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span>'+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
     }
-    if(r.done){doneHtml+=row;nd++}else html+=row;
+    if(isDoneOn(r,sel)){doneHtml+=row;nd++}else html+=row;
   }
-  if(doneHtml)html+='<details class="donesec"'+(doneOpenC?' open':'')+'><summary><span class="dcaret">▾</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div></details>';
+  if(doneHtml)html+='<details class="donesec"'+(doneOpenC?' open':'')+'><summary><span class="dcaret">\u25be</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div></details>';
   el.innerHTML=html||'<div class="empty">Nothing planned</div>';
   bindDoneSec(el,'c');
 }
+function toMin(s){var p=s.split(':');return parseInt(p[0],10)*60+parseInt(p[1],10)}
+function fmtDur(m){var h=Math.floor(m/60),mm=m%60,out='';if(h)out+=h+'h';if(mm)out+=(out?' ':'')+mm+'m';return out||'0m'}
+function renderTimeline(){
+  var tg=$('#tltoggle'),card=$('#tlcard');
+  tg.hidden=false;
+  tg.textContent=tlOpen?'Hide timeline':'Timeline';
+  card.hidden=!tlOpen;
+  if(!tlOpen)return;
+  var evs=events.filter(function(x){return occursOn(x,sel)&&x.time});
+  evs.sort(function(a,b){return a.time<b.time?-1:a.time>b.time?1:0});
+  var h='<div class="bktitle">Timeline</div>';
+  if(!evs.length){card.innerHTML=h+'<div class="tlgap" style="padding-left:0">No timed commitments for this day</div>';return}
+  var prevEnd=null;
+  for(var k=0;k<evs.length;k++){var e=evs[k];
+    var sm=toMin(e.time),em=e.end?toMin(e.end):sm+60;
+    if(em<=sm)em=sm+60;
+    if(prevEnd!==null&&sm>prevEnd)h+='<div class="tlgap">'+fmtDur(sm-prevEnd)+' free</div>';
+    h+='<div class="tlrow'+(prevEnd===null?' first':'')+'"><span class="tltime">'+esc(e.time)+(e.end?'\u2013'+esc(e.end):'')+'</span><span>'+esc(e.text)+(repOf(e)?' <span class="rep">\u21bb</span>':'')+'</span>'+(e.end?'<span class="tldur">'+fmtDur(em-sm)+'</span>':'')+'</div>';
+    prevEnd=Math.max(prevEnd===null?0:prevEnd,em);
+  }
+  card.innerHTML=h;
+}
+$('#tltoggle').addEventListener('click',function(){tlOpen=!tlOpen;renderTimeline()});
 var calOpen=false;
 function renderCal(){
   var sd=dayFromKey(sel),cy=sd.getFullYear(),cm=sd.getMonth();
@@ -443,7 +522,7 @@ function renderCal(){
     cls='day';
     if(k===keyOf(today))cls+=' today';
     if(k===sel)cls+=' sel';
-    if(events.some(function(e){return e.date===k})||todos.some(function(x){return x.date===k}))cls+=' hasdot';
+    if(events.some(function(e){return occursOn(e,k)})||todos.some(function(x){return occursOn(x,k)}))cls+=' hasdot';
     html+='<div class="'+cls+'" data-key="'+k+'">'+d+(cls.indexOf('hasdot')>-1?'<span class="dot"></span>':'')+'</div>';
   }
   $('#grid').innerHTML=html;
@@ -453,6 +532,7 @@ function renderCal(){
   $('#cdatebtn').setAttribute('aria-expanded',calOpen?'true':'false');
   $('#gotodaycal').hidden=(sel===keyOf(today));
   renderDay();
+  renderTimeline();
 }
 function renderAll(){renderTodos();renderCal();renderGrocery()}
 
@@ -500,13 +580,26 @@ $('#list').addEventListener('click',function(e){
   if(e.target.closest('[data-act=menu]')){menuId=(menuId===id?null:id);renderTodos();return}
   menuId=null;
   if(e.target.closest('[data-act=toggle]')){
-    for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].done=!todos[i].done;
+    for(i=0;i<todos.length;i++)if(todos[i].id===id)toggleDoneOn(todos[i],sel);
     save(); renderTodos();
   } else if(e.target.closest('[data-act=save]')){
     var txt=row.querySelector('.eetext').value.trim(); if(!txt)return;
     var nc=row.querySelector('.eecat').value;
-    for(i=0;i<todos.length;i++)if(todos[i].id===id){todos[i].text=txt;todos[i].cat=nc;todos[i].pri=row.querySelector('.eepri').value||'md'}
+    var nd2=row.querySelector('.eedate2').value;
+    var nr=row.querySelector('.eerep').value;
+    var nn=row.querySelector('.eenote').value.trim();
+    for(i=0;i<todos.length;i++)if(todos[i].id===id){var tt=todos[i];
+      tt.text=txt;tt.cat=nc;tt.pri=row.querySelector('.eepri').value||'md';
+      if(nd2)tt.date=nd2;
+      if(nr){tt.rep=nr}else{delete tt.rep;delete tt.doneBy}
+      if(nn)tt.note=nn;else delete tt.note;
+    }
     editTid=null; save(); renderTodos();
+  } else if(e.target.closest('[data-act=note]')){
+    noteOpenId=(noteOpenId===id?null:id); renderTodos();
+  } else if(e.target.closest('[data-act=mtoday]')){
+    for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].date=keyOf(today);
+    menuId=null; save(); renderTodos();
   } else if(e.target.closest('[data-act=cancel]')){
     editTid=null; renderTodos();
   } else if(e.target.closest('[data-act=del]')){
@@ -520,7 +613,7 @@ $('#list').addEventListener('click',function(e){
   }
 });
 $('#cleardone').addEventListener('click',function(){
-  todos=todos.filter(function(x){return !(x.date===sel&&x.done)});save();renderTodos()});
+  todos=todos.filter(function(x){return !(!repOf(x)&&x.date===sel&&x.done)});save();renderTodos()});
 $('#events').addEventListener('click',function(e){
   var row=e.target.closest('.eventrow'); if(!row)return;
   var id=row.getAttribute('data-id'),kind=row.getAttribute('data-kind');
@@ -530,11 +623,23 @@ $('#events').addEventListener('click',function(e){
     var txt=row.querySelector('.eetext').value.trim(); if(!txt)return;
     if(kind==='ev'){
       var nd=row.querySelector('.eedate').value;
-      for(i=0;i<events.length;i++)if(events[i].id===id){events[i].text=txt;events[i].time=row.querySelector('.eestart').value||'';events[i].end=row.querySelector('.eeend').value||'';if(nd)events[i].date=nd}
+      var nre=row.querySelector('.eerep').value;
+      for(i=0;i<events.length;i++)if(events[i].id===id){var ev=events[i];
+        ev.text=txt;ev.time=row.querySelector('.eestart').value||'';ev.end=row.querySelector('.eeend').value||'';if(nd)ev.date=nd;
+        if(nre)ev.rep=nre;else delete ev.rep;
+      }
       editId=null;
     } else {
       var nc=row.querySelector('.eecat').value;
-      for(i=0;i<todos.length;i++)if(todos[i].id===id){todos[i].text=txt;todos[i].cat=nc;todos[i].pri=row.querySelector('.eepri').value||'md'}
+      var nd2=row.querySelector('.eedate2').value;
+      var nr=row.querySelector('.eerep').value;
+      var nn=row.querySelector('.eenote').value.trim();
+      for(i=0;i<todos.length;i++)if(todos[i].id===id){var tt=todos[i];
+        tt.text=txt;tt.cat=nc;tt.pri=row.querySelector('.eepri').value||'md';
+        if(nd2)tt.date=nd2;
+        if(nr){tt.rep=nr}else{delete tt.rep;delete tt.doneBy}
+        if(nn)tt.note=nn;else delete tt.note;
+      }
       editTid=null;
     }
     save(); renderCal();
@@ -542,8 +647,13 @@ $('#events').addEventListener('click',function(e){
     if(kind==='tsk')editTid=null; else editId=null;
     renderCal();
   } else if(e.target.closest('[data-act=toggle]')&&kind==='tsk'){
-    for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].done=!todos[i].done;
+    for(i=0;i<todos.length;i++)if(todos[i].id===id)toggleDoneOn(todos[i],sel);
     save(); renderCal();
+  } else if(e.target.closest('[data-act=note]')){
+    noteOpenId=(noteOpenId===id?null:id); renderCal();
+  } else if(e.target.closest('[data-act=mtoday]')){
+    for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].date=keyOf(today);
+    menuId=null; save(); renderCal();
   } else if(e.target.closest('[data-act=del]')){
     editId=null; editTid=null;
     if(kind==='ev'){events=events.filter(function(x){return x.id!==id});save()}
@@ -662,12 +772,18 @@ bktoggle.addEventListener('click',function(){bkpanel.hidden=!bkpanel.hidden;bkto
 function cleanTodo(x){
   if(!x||typeof x.text!=='string')return null;
   var d=(typeof x.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.date))?x.date:keyOf(new Date());
-  return{id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),text:x.text.slice(0,500),done:!!x.done,date:d,cat:(x.cat===''||CATS[x.cat])?x.cat:'per',pri:PRIS[x.pri]?x.pri:'md'};
+  var o={id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),text:x.text.slice(0,500),done:!!x.done,date:d,cat:(x.cat===''||CATS[x.cat])?x.cat:'per',pri:PRIS[x.pri]?x.pri:'md'};
+  if(x.rep==='day'||x.rep==='week'||x.rep==='month')o.rep=x.rep;
+  if(typeof x.note==='string'&&x.note)o.note=x.note.slice(0,1000);
+  if(o.rep&&x.doneBy&&typeof x.doneBy==='object'){var db={},kk;for(kk in x.doneBy)if(/^\d{4}-\d{2}-\d{2}$/.test(kk)&&x.doneBy[kk])db[kk]=true;if(Object.keys(db).length)o.doneBy=db}
+  return o;
 }
 function cleanEvent(x){
   if(!x||typeof x.text!=='string')return null;
   var d=(typeof x.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.date))?x.date:keyOf(new Date());
-  return{id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),date:d,text:x.text.slice(0,500),time:typeof x.time==='string'?x.time:'',end:typeof x.end==='string'?x.end:''};
+  var o={id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),date:d,text:x.text.slice(0,500),time:typeof x.time==='string'?x.time:'',end:typeof x.end==='string'?x.end:''};
+  if(x.rep==='day'||x.rep==='week'||x.rep==='month')o.rep=x.rep;
+  return o;
 }
 function cleanGroc(x){
   if(!x||typeof x.text!=='string')return null;
