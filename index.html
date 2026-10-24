@@ -555,7 +555,7 @@ function minOptions(mm){
   var quarters=['00','15','30','45'],h='';
   for(var q=0;q<4;q++)h+='<option value="'+quarters[q]+'"'+(mm===quarters[q]?' selected':'')+'>'+quarters[q]+'</option>';
   if(mm&&quarters.indexOf(mm)<0)h+='<option value="'+mm+'" selected>'+mm+'</option>';
-  h+='<option value="x">other\u2026</option>';
+  h+='<option value="x">Exact\u2026</option>';
   return h;
 }
 function timeFieldHTML(val){
