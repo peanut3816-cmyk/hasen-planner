@@ -129,9 +129,10 @@ section[hidden]{display:none}
 .notebtn{border:none;background:none;color:#9d968e;font:inherit;font-size:11px;font-weight:600;padding:2px 4px;cursor:pointer;flex:none;text-decoration:underline}
 .todo.wrapnote,.eventrow.wrapnote{flex-wrap:wrap}
 .todonote{flex:1 1 100%;font-size:13px;color:var(--muted);padding:2px 0 2px 34px;white-space:pre-wrap;font-weight:400}
+#earlier{margin:0 16px 8px}
 .erow{flex-wrap:wrap}
 .erow .txt{flex:1 1 auto;min-width:0}
-.erow .eact{flex:1 1 100%;display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.erow .eact{flex:1 1 100%;display:flex;gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .ebtn{border:1px solid var(--line);background:#fff;color:var(--teal);font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;flex:none}
 .eact input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);width:126px;flex:none;font-size:13px}
 .emuted{color:#9d968e;font-size:12px;font-weight:400}
@@ -320,7 +321,7 @@ function deleteTodo(id){
     if(todos[k].id===id){
       var idx=k,item=todos[k];
       todos.splice(k,1); save();
-      showUndo('Task deleted',function(){
+      showUndo(repOf(item)?'Repeating task deleted':'Task deleted',function(){
         todos.splice(Math.min(idx,todos.length),0,item); save(); renderTodos(); renderCal();
       });
       return;
@@ -406,7 +407,7 @@ function bindDoneSec(el,which){
 var noteOpenId=null,earlierOpen=false,tlOpen=false;
 function taskRow(t,k){
   var tk=keyOf(today);
-  var menu='<div class="rmenu">'+((!repOf(t)&&!t.done&&t.date<tk)?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>';
+  var menu='<div class="rmenu">'+((!repOf(t)&&!t.done&&t.date<tk)?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(t)?'Delete series':'Delete')+'</button></div>';
   return '<div class="todo'+(isDoneOn(t,k)?' done':'')+(noteOpenId===t.id?' wrapnote':'')+'" data-id="'+t.id+'">'+
     '<div class="check" data-act="toggle">'+(isDoneOn(t,k)?'\u2713':'')+'</div>'+
     '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
@@ -467,7 +468,7 @@ function renderDay(){
         '<div class="edtimes"><input type="time" class="eestart" value="'+esc(e.time||'')+'"><span class="dash">\u2013</span><input type="time" class="eeend" value="'+esc(e.end||'')+'"></div></div>'+
         '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div></div>';
     } else {
-      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span>'+(repOf(e)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+'</div>';
+      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span>'+(repOf(e)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(e)?'Delete series':'Delete')+'</button></div>':'')+'</div>';
     }
   }
   var tks=todos.filter(function(x){return occursOn(x,sel)});
@@ -476,7 +477,7 @@ function renderDay(){
     if(r.id===editTid){
       row=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
     } else {
-      var rmenu='<div class="rmenu">'+((!repOf(r)&&!r.done&&r.date<keyOf(today))?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>';
+      var rmenu='<div class="rmenu">'+((!repOf(r)&&!r.done&&r.date<keyOf(today))?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(r)?'Delete series':'Delete')+'</button></div>';
       row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span>'+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
     }
     if(isDoneOn(r,sel)){doneHtml+=row;nd++}else html+=row;
@@ -497,13 +498,13 @@ function renderTimeline(){
   evs.sort(function(a,b){return a.time<b.time?-1:a.time>b.time?1:0});
   var h='<div class="bktitle">Timeline</div>';
   if(!evs.length){card.innerHTML=h+'<div class="tlgap" style="padding-left:0">No timed commitments for this day</div>';return}
-  var prevEnd=null;
+  var prevEnd=null,firstRow=true;
   for(var k=0;k<evs.length;k++){var e=evs[k];
-    var sm=toMin(e.time),em=e.end?toMin(e.end):sm+60;
-    if(em<=sm)em=sm+60;
+    var sm=toMin(e.time),hasEnd=!!(e.end&&toMin(e.end)>sm),em=hasEnd?toMin(e.end):null;
     if(prevEnd!==null&&sm>prevEnd)h+='<div class="tlgap">'+fmtDur(sm-prevEnd)+' free</div>';
-    h+='<div class="tlrow'+(prevEnd===null?' first':'')+'"><span class="tltime">'+esc(e.time)+(e.end?'\u2013'+esc(e.end):'')+'</span><span>'+esc(e.text)+(repOf(e)?' <span class="rep">\u21bb</span>':'')+'</span>'+(e.end?'<span class="tldur">'+fmtDur(em-sm)+'</span>':'')+'</div>';
-    prevEnd=Math.max(prevEnd===null?0:prevEnd,em);
+    h+='<div class="tlrow'+(firstRow?' first':'')+'"><span class="tltime">'+esc(e.time)+(hasEnd?'\u2013'+esc(e.end):'')+'</span><span>'+esc(e.text)+(repOf(e)?' <span class="rep">\u21bb</span>':'')+'</span>'+(hasEnd?'<span class="tldur">'+fmtDur(em-sm)+'</span>':'<span class="tldur">no end time</span>')+'</div>';
+    prevEnd=hasEnd?Math.max(prevEnd===null?0:prevEnd,em):null;
+    firstRow=false;
   }
   card.innerHTML=h;
 }
