@@ -533,7 +533,7 @@ function renderCal(){
     cls='day';
     if(k===keyOf(today))cls+=' today';
     if(k===sel)cls+=' sel';
-    if(events.some(function(e){return occursOn(e,k)})||todos.some(function(x){return occursOn(x,k)}))cls+=' hasdot';
+    if(events.some(function(e){return occursOn(e,k)})||todos.some(function(x){return !repOf(x)&&occursOn(x,k)}))cls+=' hasdot';
     html+='<div class="'+cls+'" data-key="'+k+'">'+d+(cls.indexOf('hasdot')>-1?'<span class="dot"></span>':'')+'</div>';
   }
   $('#grid').innerHTML=html;
