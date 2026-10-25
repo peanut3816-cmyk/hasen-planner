@@ -135,7 +135,7 @@ section[hidden]{display:none}
 .erow{flex-wrap:wrap}
 .erow .txt{flex:1 1 auto;min-width:0}
 .erow .eact{flex:1 1 100%;display:flex;gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
-.emovelbl{font-size:13px;color:#9d968e;flex:none}
+.movepick{flex:1 1 100%;border-top:1px solid var(--line);margin-top:8px}
 .ebtn{border:1px solid var(--line);background:#fff;color:var(--teal);font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;flex:none}
 .eact input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);width:126px;flex:none;font-size:13px}
 .emuted{color:#9d968e;font-size:12px;font-weight:400}
@@ -422,7 +422,7 @@ function bindDoneSec(el,which){
     if(which==='t')doneOpenT=ds.open;else if(which==='g')doneOpenG=ds.open;else doneOpenC=ds.open;
   });
 }
-var noteOpenId=null,earlierOpen=false,tlOpen=false;
+var noteOpenId=null,earlierOpen=false,tlOpen=false,movePickId=null,movePickY=0,movePickM=0;
 function taskRow(t,k){
   var tk=keyOf(today);
   var menu='<div class="rmenu">'+((!repOf(t)&&!t.done&&t.date<tk)?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(t)?'Delete series':'Delete')+'</button></div>';
@@ -459,25 +459,53 @@ function renderTodos(){
 }
 function renderEarlier(){
   var box=$('#earlier'),tk=keyOf(today);
-  if(sel!==tk){box.innerHTML='';return}
+  if(sel!==tk){movePickId=null;box.innerHTML='';return}
   var old=[],i;
   for(i=0;i<todos.length;i++){t=todos[i];if(!repOf(t)&&!t.done&&t.date<tk)old.push(t)}
   if(!old.length){box.innerHTML='';return}
   var h='<details class="donesec"'+(earlierOpen?' open':'')+'><summary><span class="dcaret">\u25be</span>Earlier unfinished ('+old.length+')</summary><div class="donerows">';
   for(i=0;i<old.length;i++){t=old[i];
-    h+='<div class="todo erow" data-id="'+t.id+'">'+(t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+'<div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><span class="emovelbl">Choose another date</span><input type="date" class="emove" value="" aria-label="Choose another date"></div></div>';
+    h+='<div class="todo erow" data-id="'+t.id+'">'+(t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+'<div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><button class="ebtn" data-act="pickdate">Choose another date</button></div>'+(movePickId===t.id?buildMovePick():'')+'</div>';
   }
   box.innerHTML=h+'</div></details>';
   var ds=box.querySelector('.donesec');
   if(ds)ds.addEventListener('toggle',function(){earlierOpen=ds.open});
 }
-$('#earlier').addEventListener('change',function(e){
-  if(!e.target.classList||!e.target.classList.contains('emove'))return;
-  var row=e.target.closest('.erow'); if(!row)return;
-  var v=e.target.value; if(!v)return;
-  var id=row.getAttribute('data-id'),i;
-  for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].date=v;
-  save(); renderAll();
+function buildMovePick(){
+  var cy=movePickY,cm=movePickM;
+  var first=new Date(cy,cm,1).getDay();
+  var days=new Date(cy,cm+1,0).getDate();
+  var html='<div class="movepick"><div class="daterow"><button class="navbtn" data-act="mpprev" aria-label="Previous month">‹</button><h2>'+MONTHS[cm]+' '+cy+'</h2><button class="navbtn" data-act="mpnext" aria-label="Next month">›</button></div><div class="grid">',d,k,cls;
+  for(i=0;i<7;i++)html+='<div class="dow">'+DOWS[i]+'</div>';
+  for(i=0;i<first;i++)html+='<div class="day blank"></div>';
+  for(d=1;d<=days;d++){
+    k=cy+'-'+pad(cm+1)+'-'+pad(d);
+    cls='day';
+    if(k===keyOf(today))cls+=' today';
+    html+='<div class="'+cls+'" data-key="'+k+'">'+d+'</div>';
+  }
+  return html+'</div></div>';
+}
+$('#earlier').addEventListener('click',function(e){
+  var act=e.target.closest('[data-act]');
+  var row=e.target.closest('.erow');
+  if(act&&act.getAttribute('data-act')==='pickdate'&&row){
+    if(movePickId===row.getAttribute('data-id')){movePickId=null}
+    else{movePickId=row.getAttribute('data-id');movePickY=today.getFullYear();movePickM=today.getMonth()}
+    renderEarlier(); return;
+  }
+  if(act&&(act.getAttribute('data-act')==='mpprev'||act.getAttribute('data-act')==='mpnext')){
+    var dm=act.getAttribute('data-act')==='mpnext'?1:-1;
+    movePickM+=dm; if(movePickM<0){movePickM=11;movePickY--} if(movePickM>11){movePickM=0;movePickY++}
+    renderEarlier(); return;
+  }
+  var day=e.target.closest('.day');
+  if(day&&day.getAttribute('data-key')&&movePickId){
+    var id=movePickId,i;
+    movePickId=null;
+    for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].date=day.getAttribute('data-key');
+    save(); renderAll();
+  }
 });
 function renderDay(){
   var el=$('#events'),html='',doneHtml='',k,e,r,nd=0;
