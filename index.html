@@ -65,7 +65,7 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .day.sel{background:var(--mint);color:#fff;border-color:var(--mint)}
 .day .dot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:999px;background:var(--mint)}
 .day.sel .dot{background:#fff}
-#monthbox[hidden]{display:none}
+#monthbox[hidden],#monthbox2[hidden]{display:none}
 .datebtn{font:inherit;font-size:16px;font-weight:600;min-width:170px;text-align:center;background:none;border:none;color:var(--ink);cursor:pointer;padding:8px 4px}
 .daylabel{margin:14px 16px 4px;font-weight:600}
 .etime{background:#ecebe8;color:var(--mint);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;flex:none;white-space:nowrap}
@@ -172,10 +172,18 @@ section[hidden]{display:none}
 <section id="view-todos">
   <div class="daterow">
     <button class="navbtn" id="dprev">‹</button>
-    <h2 id="todolabel"></h2>
+    <button class="datebtn" id="tdatebtn" aria-expanded="false"><span id="todolabel"></span> <span class="caret" id="tccaret">▾</span></button>
     <button class="navbtn" id="dnext">›</button>
   </div>
   <button class="todaypill" id="gotoday" hidden>Back to today</button>
+  <div id="monthbox2" hidden>
+    <div class="calhead">
+      <button class="navbtn" id="tmprev" aria-label="Previous month">‹</button>
+      <h2 id="tmlabel"></h2>
+      <button class="navbtn" id="tmnext" aria-label="Next month">›</button>
+    </div>
+    <div class="grid" id="tgrid"></div>
+  </div>
   <div class="card" id="pcard">
     <div id="ptext" style="font-weight:700"></div>
     <div class="pbar"><div class="pfill" id="pfill"></div></div>
@@ -417,7 +425,7 @@ function taskRow(t,k){
   var menu='<div class="rmenu">'+((!repOf(t)&&!t.done&&t.date<tk)?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(t)?'Delete series':'Delete')+'</button></div>';
   return '<div class="todo'+(isDoneOn(t,k)?' done':'')+(noteOpenId===t.id?' wrapnote':'')+'" data-id="'+t.id+'">'+
     '<div class="check" data-act="toggle">'+(isDoneOn(t,k)?'\u2713':'')+'</div>'+
-    '<span class="pri" style="background:'+PRIS[t.pri].color+'"></span>'+
+    '<span class="pri" style="background:'+(t.pri==='hi'?PRIS.hi.color:'transparent')+'"></span>'+
     (t.cat&&CATS[t.cat]?'<span class="tag" style="background:'+CATS[t.cat].bg+';color:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>':'')+
     (repOf(t)?'<span class="rep">\u21bb</span>':'')+
     '<div class="txt">'+esc(t.text)+'</div>'+
@@ -428,6 +436,12 @@ function taskRow(t,k){
 function renderTodos(){
   $('#todolabel').textContent=fmtLabel(sel);
   $('#gotoday').hidden=(sel===keyOf(today));
+  var tg=buildMonth();
+  $('#tmlabel').textContent=tg.label;
+  $('#tgrid').innerHTML=tg.html;
+  $('#monthbox2').hidden=!tcalOpen;
+  $('#tccaret').textContent=tcalOpen?'\u25b4':'\u25be';
+  $('#tdatebtn').setAttribute('aria-expanded',tcalOpen?'true':'false');
   var el=$('#list'),html='',doneHtml='',rows=todos.filter(function(x){return occursOn(x,sel)}),nd=0;
   for(i=0;i<rows.length;i++){t=rows[i];
     var row=(t.id===editTid)?taskEditRow(t):taskRow(t,sel);
@@ -448,7 +462,7 @@ function renderEarlier(){
   if(!old.length){box.innerHTML='';return}
   var h='<details class="donesec"'+(earlierOpen?' open':'')+'><summary><span class="dcaret">\u25be</span>Earlier unfinished ('+old.length+')</summary><div class="donerows">';
   for(i=0;i<old.length;i++){t=old[i];
-    h+='<div class="todo erow" data-id="'+t.id+'"><span class="pri" style="background:'+PRIS[t.pri].color+'"></span><div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><button class="ebtn" data-act="mtoday">Move to today</button><input type="date" class="emove" value="'+tk+'" aria-label="Pick a date"><button class="ebtn" data-act="mdate">Move</button></div></div>';
+    h+='<div class="todo erow" data-id="'+t.id+'"><span class="pri" style="background:'+(t.pri==='hi'?PRIS.hi.color:'transparent')+'"></span><div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><button class="ebtn" data-act="mtoday">Move to today</button><input type="date" class="emove" value="'+tk+'" aria-label="Pick a date"><button class="ebtn" data-act="mdate">Move</button></div></div>';
   }
   box.innerHTML=h+'</div></details>';
   var ds=box.querySelector('.donesec');
@@ -485,7 +499,7 @@ function renderDay(){
       row=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
     } else {
       var rmenu='<div class="rmenu">'+((!repOf(r)&&!r.done&&r.date<keyOf(today))?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(r)?'Delete series':'Delete')+'</button></div>';
-      row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div><span class="pri" style="background:'+PRIS[r.pri].color+'"></span>'+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
+      row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div><span class="pri" style="background:'+(r.pri==='hi'?PRIS.hi.color:'transparent')+'"></span>'+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
     }
     if(isDoneOn(r,sel)){doneHtml+=row;nd++}else html+=row;
   }
@@ -519,10 +533,9 @@ function renderTimeline(){
   card.innerHTML=h;
 }
 $('#tltoggle').addEventListener('click',function(){tlOpen=!tlOpen;renderTimeline()});
-var calOpen=false;
-function renderCal(){
+var calOpen=false,tcalOpen=false;
+function buildMonth(){
   var sd=dayFromKey(sel),cy=sd.getFullYear(),cm=sd.getMonth();
-  $('#mlabel').textContent=MONTHS[cm]+' '+cy;
   var first=new Date(cy,cm,1).getDay();
   var days=new Date(cy,cm+1,0).getDate();
   var html='',d,k,cls;
@@ -536,7 +549,12 @@ function renderCal(){
     if(events.some(function(e){return occursOn(e,k)})||todos.some(function(x){return !repOf(x)&&occursOn(x,k)}))cls+=' hasdot';
     html+='<div class="'+cls+'" data-key="'+k+'">'+d+(cls.indexOf('hasdot')>-1?'<span class="dot"></span>':'')+'</div>';
   }
-  $('#grid').innerHTML=html;
+  return {html:html,label:MONTHS[cm]+' '+cy};
+}
+function renderCal(){
+  var mg=buildMonth();
+  $('#mlabel').textContent=mg.label;
+  $('#grid').innerHTML=mg.html;
   $('#clabel').textContent=fmtLabel(sel);
   $('#monthbox').hidden=!calOpen;
   $('#ccaret').textContent=calOpen?'\u25b4':'\u25be';
@@ -747,13 +765,20 @@ function shiftMonth(n){
   sel=keyOf(d); editId=null; editTid=null; renderAll();
 }
 $('#cdatebtn').addEventListener('click',function(){calOpen=!calOpen;renderCal()});
+$('#tdatebtn').addEventListener('click',function(){tcalOpen=!tcalOpen;renderTodos()});
+$('#tgrid').addEventListener('click',function(e){
+  var c=e.target.closest('.day'); if(!c||!c.getAttribute('data-key'))return;
+  sel=c.getAttribute('data-key'); tcalOpen=false; renderAll();
+});
+$('#tmprev').addEventListener('click',function(){shiftMonth(-1)});
+$('#tmnext').addEventListener('click',function(){shiftMonth(1)});
 $('#cprev').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()-1);sel=keyOf(d);editId=null;editTid=null;renderAll()});
 $('#cnext').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()+1);sel=keyOf(d);editId=null;editTid=null;renderAll()});
 $('#mprev').addEventListener('click',function(){shiftMonth(-1)});
 $('#mnext').addEventListener('click',function(){shiftMonth(1)});
 $('#dprev').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()-1);sel=keyOf(d);renderAll()});
 $('#dnext').addEventListener('click',function(){var d=dayFromKey(sel);d.setDate(d.getDate()+1);sel=keyOf(d);renderAll()});
-$('#gotoday').addEventListener('click',function(){sel=keyOf(today);renderAll()});
+$('#gotoday').addEventListener('click',function(){sel=keyOf(today);tcalOpen=false;renderAll()});
 $('#gotodaycal').addEventListener('click',function(){sel=keyOf(today);editId=null;editTid=null;calOpen=false;renderAll()});
 function renderGrocery(){
   var el=$('#glist'),html='',doneHtml='',j,g,nd=0;
