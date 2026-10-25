@@ -81,7 +81,7 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .btn.tiny{padding:8px 12px;font-size:13px}
 .eventrow .txt,.todo .txt{cursor:pointer}
 .pri{width:9px;height:9px;border-radius:999px;flex:none}
-.mv{border:1px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-size:13px;padding:6px 10px;cursor:pointer;flex:none;border-radius:8px}
+.mv{border:none;background:none;color:#9d968e;font-size:12px;padding:2px 5px;cursor:pointer;flex:none;line-height:1}
 .mvcol{display:flex;flex-direction:column;gap:2px;flex:none}
 .edtimes select{flex:1;min-width:0}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom));z-index:5;background:linear-gradient(to top,#f6f4f1 60%,rgba(246,244,241,0))}
@@ -409,7 +409,7 @@ function taskEditRow(t){
     '<div class="edtimes"><select class="eecat">'+catOptions(t.cat)+'</select><select class="eepri">'+priOptions(t.pri)+'</select></div>'+
     '<div class="edtimes"><input type="date" class="eedate2" value="'+esc(t.date)+'" aria-label="Date"><select class="eerep">'+repOptions(repOf(t))+'</select></div>'+
     '<input type="text" class="eenote" placeholder="Note (optional)" value="'+esc(t.note||'')+'"></div>'+
-    '<div class="mvcol"><button class="mv" data-act="up">Move up</button><button class="mv" data-act="dn">Move down</button></div>'+
+    '<div class="mvcol"><button class="mv" data-act="up">\u25b2</button><button class="mv" data-act="dn">\u25bc</button></div>'+
     '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div>'+
     '</div>';
 }
