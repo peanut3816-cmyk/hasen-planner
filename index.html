@@ -107,6 +107,7 @@ section[hidden]{display:none}
 .donesec .donerows{display:flex;flex-direction:column;gap:8px;padding:2px 0 4px}
 .edtimes input[type=date]{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:inherit;background:#fff;color:var(--ink);flex:1;min-width:140px;text-align:left}
 .edtimes select.eerep,.edtimes select.eecat,.edtimes select.eepri{min-width:140px}
+.edtimes select.eerep{min-width:170px}
 .bkbtn{position:absolute;top:20px;right:16px;border:1px solid #e3ded8;background:#fff;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;z-index:2}
 #bkpanel .bktitle{font-weight:700;margin-bottom:4px}
 #bkpanel p{color:var(--muted);font-size:13px;margin:0 0 10px}
@@ -134,6 +135,7 @@ section[hidden]{display:none}
 .erow{flex-wrap:wrap}
 .erow .txt{flex:1 1 auto;min-width:0}
 .erow .eact{flex:1 1 100%;display:flex;gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.emovelbl{font-size:13px;color:#9d968e;flex:none}
 .ebtn{border:1px solid var(--line);background:#fff;color:var(--teal);font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;flex:none}
 .eact input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);width:126px;flex:none;font-size:13px}
 .emuted{color:#9d968e;font-size:12px;font-weight:400}
@@ -463,7 +465,7 @@ function renderEarlier(){
   if(!old.length){box.innerHTML='';return}
   var h='<details class="donesec"'+(earlierOpen?' open':'')+'><summary><span class="dcaret">\u25be</span>Earlier unfinished ('+old.length+')</summary><div class="donerows">';
   for(i=0;i<old.length;i++){t=old[i];
-    h+='<div class="todo erow" data-id="'+t.id+'">'+(t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+'<div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><input type="date" class="emove" value="'+tk+'" aria-label="Choose another date"></div></div>';
+    h+='<div class="todo erow" data-id="'+t.id+'">'+(t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+'<div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><span class="emovelbl">Choose another date</span><input type="date" class="emove" value="" aria-label="Choose another date"></div></div>';
   }
   box.innerHTML=h+'</div></details>';
   var ds=box.querySelector('.donesec');
