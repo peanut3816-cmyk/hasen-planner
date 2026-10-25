@@ -426,7 +426,7 @@ function taskRow(t,k){
   var menu='<div class="rmenu">'+((!repOf(t)&&!t.done&&t.date<tk)?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(t)?'Delete series':'Delete')+'</button></div>';
   return '<div class="todo'+(isDoneOn(t,k)?' done':'')+(noteOpenId===t.id?' wrapnote':'')+'" data-id="'+t.id+'">'+
     '<div class="check" data-act="toggle">'+(isDoneOn(t,k)?'\u2713':'')+'</div>'+
-    '<span class="pri" style="background:'+(t.pri==='hi'?PRIS.hi.color:'transparent')+'"></span>'+
+    (t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+
     (t.cat&&CATS[t.cat]?'<span class="tag" style="background:'+CATS[t.cat].bg+';color:'+CATS[t.cat].color+'">'+CATS[t.cat].label+'</span>':'')+
     (repOf(t)?'<span class="rep">\u21bb</span>':'')+
     '<div class="txt">'+esc(t.text)+'</div>'+
@@ -463,18 +463,18 @@ function renderEarlier(){
   if(!old.length){box.innerHTML='';return}
   var h='<details class="donesec"'+(earlierOpen?' open':'')+'><summary><span class="dcaret">\u25be</span>Earlier unfinished ('+old.length+')</summary><div class="donerows">';
   for(i=0;i<old.length;i++){t=old[i];
-    h+='<div class="todo erow" data-id="'+t.id+'"><span class="pri" style="background:'+(t.pri==='hi'?PRIS.hi.color:'transparent')+'"></span><div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><button class="ebtn" data-act="mtoday">Move to today</button><input type="date" class="emove" value="'+tk+'" aria-label="Pick a date"><button class="ebtn" data-act="mdate">Move</button></div></div>';
+    h+='<div class="todo erow" data-id="'+t.id+'">'+(t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+'<div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><input type="date" class="emove" value="'+tk+'" aria-label="Choose another date"></div></div>';
   }
   box.innerHTML=h+'</div></details>';
   var ds=box.querySelector('.donesec');
   if(ds)ds.addEventListener('toggle',function(){earlierOpen=ds.open});
 }
-$('#earlier').addEventListener('click',function(e){
+$('#earlier').addEventListener('change',function(e){
+  if(!e.target.classList||!e.target.classList.contains('emove'))return;
   var row=e.target.closest('.erow'); if(!row)return;
-  if(!e.target.closest('[data-act]'))return;
-  var id=row.getAttribute('data-id'),i,to=keyOf(today);
-  if(e.target.closest('[data-act=mdate]')){var v=row.querySelector('.emove').value; if(!v)return; to=v}
-  for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].date=to;
+  var v=e.target.value; if(!v)return;
+  var id=row.getAttribute('data-id'),i;
+  for(i=0;i<todos.length;i++)if(todos[i].id===id)todos[i].date=v;
   save(); renderAll();
 });
 function renderDay(){
@@ -500,7 +500,7 @@ function renderDay(){
       row=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
     } else {
       var rmenu='<div class="rmenu">'+((!repOf(r)&&!r.done&&r.date<keyOf(today))?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(r)?'Delete series':'Delete')+'</button></div>';
-      row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div><span class="pri" style="background:'+(r.pri==='hi'?PRIS.hi.color:'transparent')+'"></span>'+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
+      row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div>'+(r.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
     }
     if(isDoneOn(r,sel)){doneHtml+=row;nd++}else html+=row;
   }
