@@ -156,6 +156,20 @@ section[hidden]{display:none}
 .edtimes .timesel,.edtimes .timex{flex:none}
 .edcol select.timesel,.edcol input.timex{padding:8px 6px}
 .timesel:disabled{color:#c8c2ba;background:#f6f4f1}
+/* Special dates stay tucked away until needed. */
+.specialbox{margin:12px 16px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:12px}
+.specialbox summary{font-size:14px;font-weight:600;cursor:pointer}
+.specialhint{font-size:12px;color:var(--muted);line-height:1.5;margin:10px 0}
+.specialform[hidden]{display:none}
+.specialform{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.specialform label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.specialform input{width:100%;min-width:0;max-width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+.specialform .specialcheck{flex-direction:row;align-items:center;color:var(--ink)}
+.specialcheck input{width:18px;height:18px;margin:0}
+.specialactions{scroll-margin-bottom:110px;display:flex;gap:8px;flex-wrap:wrap}
+.specialitem{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:10px;font-size:14px}
+.specialitem .specialname{flex:1;min-width:0;overflow-wrap:anywhere}
+.specialitem small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -239,6 +253,23 @@ section[hidden]{display:none}
   <button class="small" id="tltoggle" hidden>Timeline</button>
   <div class="card" id="tlcard" hidden></div>
   <div id="events"></div>
+  <details class="specialbox" id="specialbox">
+    <summary>Special dates</summary>
+    <p class="specialhint">Birthdays, anniversaries and other yearly occasions. Preparation tasks appear in the planner, not as phone notifications.</p>
+    <div id="speciallist"></div>
+    <button type="button" class="edit" id="specialnew" style="margin-top:12px">Add special date</button>
+    <form id="specialform" class="specialform" hidden>
+      <label>Occasion<input id="specialname" maxlength="500" placeholder="e.g. Mum's birthday" required></label>
+      <label>First date (repeats yearly)<input id="specialdate" type="date" required></label>
+      <label class="specialcheck"><input id="specialprep" type="checkbox">Add a preparation task</label>
+      <div id="specialprepfields" hidden>
+        <label>Preparation task<input id="specialtask" maxlength="500" placeholder="e.g. Buy a gift or plan dinner"></label>
+        <label style="margin-top:10px">Days before<input id="speciallead" type="number" min="1" max="365" step="1" value="7" inputmode="numeric"></label>
+      </div>
+      <p class="specialhint" style="margin:0">29 February is observed on 28 February in non-leap years. Changes apply to the yearly series.</p>
+      <div class="specialactions"><button type="submit" class="btn tiny">Save special date</button><button type="button" class="edit" id="specialcancel">Cancel</button></div>
+    </form>
+  </details>
 </section>
 
 <section id="view-groc" hidden>
@@ -293,16 +324,28 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function pad(n){return String(n).padStart(2,'0')}
 function keyOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function dayFromKey(k){var p=k.split('-');return new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10))}
-function repOf(x){return (x&&(x.rep==='day'||x.rep==='week'||x.rep==='month'))?x.rep:''}
+function repOf(x){return (x&&(x.rep==='day'||x.rep==='week'||x.rep==='month'||x.rep==='year'||x.rep==='special'))?x.rep:''}
 function occursOn(x,k){
+  if(x.rep==='special'){
+    var kd=dayFromKey(k),year=kd.getFullYear();
+    for(var sy=year;sy<=year+1;sy++){
+      var anchor=annualDate(x.specialDate,sy);
+      if(keyOf(anchor)<x.specialDate)continue;
+      anchor.setDate(anchor.getDate()-x.lead);
+      if(keyOf(anchor)===k)return true;
+    }
+    return false;
+  }
   if(!repOf(x))return x.date===k;
   if(k<x.date)return false;
   var d=dayFromKey(k),s=dayFromKey(x.date),r=repOf(x);
+  if(r==='year')return keyOf(annualDate(x.date,d.getFullYear()))===k;
   if(r==='day')return true;
   if(r==='week')return d.getDay()===s.getDay();
   var dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
   return d.getDate()===Math.min(s.getDate(),dim);
 }
+function annualDate(k,y){var d=dayFromKey(k);return new Date(y,d.getMonth(),Math.min(d.getDate(),new Date(y,d.getMonth()+1,0).getDate()))}
 function isDoneOn(t,k){return repOf(t)?!!(t.doneBy&&t.doneBy[k]):!!t.done}
 function toggleDoneOn(t,k){if(repOf(t)){t.doneBy=t.doneBy||{};if(t.doneBy[k])delete t.doneBy[k];else t.doneBy[k]=true}else t.done=!t.done}
 function repOptions(r){
@@ -524,7 +567,7 @@ function renderDay(){
         '<div class="edtimes"><span class="twrap estart">'+timeFieldHTML(e.time||'')+'</span><span class="dash">\u2013</span><span class="twrap eend">'+timeFieldHTML(e.end||'')+'</span></div></div>'+
         '<div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div></div>';
     } else {
-      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.time?esc(tt):'All day')+'</span>'+(repOf(e)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(e)?'Delete series':'Delete')+'</button></div>':'')+'</div>';
+      html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.special?'Yearly':e.time?esc(tt):'All day')+'</span>'+(repOf(e)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(e)?'Delete series':'Delete')+'</button></div>':'')+'</div>';
     }
   }
   var tks=todos.filter(function(x){return occursOn(x,sel)});
@@ -581,12 +624,13 @@ function buildMonth(){
     cls='day';
     if(k===keyOf(today))cls+=' today';
     if(k===sel)cls+=' sel';
-    if(events.some(function(e){return occursOn(e,k)})||todos.some(function(x){return !repOf(x)&&occursOn(x,k)}))cls+=' hasdot';
+    if(events.some(function(e){return occursOn(e,k)})||todos.some(function(x){return (!repOf(x)||x.rep==='special')&&occursOn(x,k)}))cls+=' hasdot';
     html+='<div class="'+cls+'" data-key="'+k+'">'+d+(cls.indexOf('hasdot')>-1?'<span class="dot"></span>':'')+'</div>';
   }
   return {html:html,label:MONTHS[cm]+' '+cy};
 }
 function renderCal(){
+  renderSpecialList();
   var mg=buildMonth();
   $('#mlabel').textContent=mg.label;
   $('#grid').innerHTML=mg.html;
@@ -763,9 +807,10 @@ $('#events').addEventListener('click',function(e){
       var di=-1,ditem=null;
       for(i=0;i<events.length;i++)if(events[i].id===id){di=i;ditem=events[i];break}
       if(ditem){
-        events.splice(di,1); save();
+        var linked=todos.filter(function(t){return t.specialId===id});
+        events.splice(di,1);todos=todos.filter(function(t){return t.specialId!==id}); save();
         showUndo(repOf(ditem)?'Event series deleted':'Event deleted',function(){
-          events.splice(Math.min(di,events.length),0,ditem); save(); renderCal();
+          events.splice(Math.min(di,events.length),0,ditem);todos=todos.concat(linked); save(); renderCal();
         });
       }
     }
@@ -879,6 +924,66 @@ $('#clearcheck').addEventListener('click',function(){
     saveG(); renderGrocery();
   });
 });
+
+/* Special dates use existing events and todos storage, with no migration. */
+var specialEditId=null;
+function specialTask(id){return todos.find(function(t){return t.specialId===id})}
+function renderSpecialList(){
+  var list=events.filter(function(e){return e.special});
+  list.sort(function(a,b){return a.date.slice(5).localeCompare(b.date.slice(5))});
+  $('#speciallist').innerHTML=list.map(function(e){var t=specialTask(e.id),d=dayFromKey(e.date);return '<div class="specialitem"><div class="specialname">'+esc(e.text)+'<small>'+d.getDate()+' '+MONTHS[d.getMonth()]+' every year'+(t?' · Prepare '+t.lead+' days before':'')+'</small></div><button type="button" class="edit" data-special-edit="'+esc(e.id)+'">Edit</button><button type="button" class="edit" data-special-delete="'+esc(e.id)+'">Delete</button></div>'}).join('');
+}
+function openSpecial(id){
+  specialEditId=id||null;
+  var e=events.find(function(e){return e.id===id}),t=e&&specialTask(id);
+  $('#specialbox').open=true;$('#specialform').hidden=false;
+  $('#specialname').value=e?e.text:'';$('#specialdate').value=e?e.date:sel;
+  $('#specialprep').checked=!!t;$('#specialprepfields').hidden=!t;
+  $('#specialtask').required=!!t;$('#specialtask').value=t?t.text:'';$('#speciallead').value=t?t.lead:7;
+  $('#specialnew').hidden=true;
+  editId=null;editTid=null;menuId=null;
+  $('#specialform').scrollIntoView({block:'nearest'});
+}
+function closeSpecial(){specialEditId=null;$('#specialform').hidden=true;$('#specialnew').hidden=false}
+$('#specialnew').addEventListener('click',function(){openSpecial(null)});
+$('#specialcancel').addEventListener('click',closeSpecial);
+$('#specialprep').addEventListener('change',function(){$('#specialprepfields').hidden=!this.checked;$('#specialtask').required=this.checked});
+$('#speciallist').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  if(b.hasAttribute('data-special-edit')){openSpecial(b.getAttribute('data-special-edit'));return}
+  var id=b.getAttribute('data-special-delete'),index=events.findIndex(function(e){return e.id===id});if(index<0)return;
+  var ev=events[index],linked=todos.filter(function(t){return t.specialId===id});
+  events.splice(index,1);todos=todos.filter(function(t){return t.specialId!==id});closeSpecial();save();renderAll();
+  showUndo('Special date and preparation task deleted',function(){events.splice(Math.min(index,events.length),0,ev);todos=todos.concat(linked);save();renderAll()});
+});
+$('#specialform').addEventListener('submit',function(e){
+  e.preventDefault();
+  var text=$('#specialname').value.trim(),date=$('#specialdate').value,prep=$('#specialprep').checked,task=$('#specialtask').value.trim(),lead=Number($('#speciallead').value);
+  if(!text||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+  if(prep&&(!task||!Number.isInteger(lead)||lead<1||lead>365)){noteMsg('Add a preparation task and choose 1 to 365 days before.');return}
+  var ev=events.find(function(e){return e.id===specialEditId});
+  if(!ev){ev={id:Date.now()+''+Math.floor(Math.random()*999),time:'',end:''};events.push(ev)}
+  ev.text=text;ev.date=date;ev.rep='year';ev.special=true;
+  var t=specialTask(ev.id);
+  if(prep){
+    if(!t){t={id:ev.id+'-prep',done:false,cat:'',pri:'md'};todos.push(t)}
+    var d=dayFromKey(date);d.setDate(d.getDate()-lead);
+    if(t.specialDate!==date||t.lead!==lead)delete t.doneBy;
+    t.text=task;t.date=keyOf(d);t.rep='special';t.specialId=ev.id;t.specialDate=date;t.lead=lead;
+  }else todos=todos.filter(function(t){return t.specialId!==ev.id});
+  sel=date;closeSpecial();save();renderAll();noteMsg('Special date saved');
+});
+/* A linked task's schedule is edited with its occasion, not independently. */
+['#list','#events'].forEach(function(selector){$(selector).addEventListener('click',function(e){
+  var row=e.target.closest('[data-id]');if(!row)return;
+  var id=row.getAttribute('data-id'),t=todos.find(function(t){return t.id===id}),ev=events.find(function(x){return x.id===id});
+  if(!(t&&t.specialId)&&!(ev&&ev.special))return;
+  if(e.target.closest('[data-act=edit]')||e.target.closest('.txt')|| (ev&&ev.special&&!e.target.closest('button,input,select,a'))){
+    e.stopImmediatePropagation();openSpecial(t&&t.specialId?t.specialId:id);renderDay();renderTodos();
+    if(selector==='#list')$('#tab-cal').click();
+  }
+},true)});
+
 /* Backup and restore */
 var bkpanel=$('#bkpanel'),bktoggle=$('#bktoggle');
 function fmtWhen(t){try{return new Date(t).toLocaleString('en-NZ',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}catch(e){return ''}}
@@ -893,6 +998,7 @@ function cleanTodo(x){
   var d=(typeof x.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.date))?x.date:keyOf(new Date());
   var o={id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),text:x.text.slice(0,500),done:!!x.done,date:d,cat:(x.cat===''||CATS[x.cat])?x.cat:'per',pri:PRIS[x.pri]?x.pri:'md'};
   if(x.rep==='day'||x.rep==='week'||x.rep==='month')o.rep=x.rep;
+  if(x.rep==='special'&&typeof x.specialId==='string'&&typeof x.specialDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.specialDate)&&Number.isInteger(x.lead)&&x.lead>=1&&x.lead<=365){o.rep='special';o.specialId=x.specialId;o.specialDate=x.specialDate;o.lead=x.lead}
   if(typeof x.note==='string'&&x.note)o.note=x.note.slice(0,1000);
   if(o.rep&&x.doneBy&&typeof x.doneBy==='object'){var db={},kk;for(kk in x.doneBy)if(/^\d{4}-\d{2}-\d{2}$/.test(kk)&&x.doneBy[kk])db[kk]=true;if(Object.keys(db).length)o.doneBy=db}
   return o;
@@ -902,6 +1008,7 @@ function cleanEvent(x){
   var d=(typeof x.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.date))?x.date:keyOf(new Date());
   var o={id:String(x.id||Date.now()+''+Math.floor(Math.random()*999)),date:d,text:x.text.slice(0,500),time:typeof x.time==='string'?x.time:'',end:typeof x.end==='string'?x.end:''};
   if(x.rep==='day'||x.rep==='week'||x.rep==='month')o.rep=x.rep;
+  if(x.special===true&&x.rep==='year'){o.special=true;o.rep='year'}
   return o;
 }
 function cleanGroc(x){
