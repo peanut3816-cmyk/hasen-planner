@@ -163,7 +163,13 @@ section[hidden]{display:none}
 .edcol select.timesel,.edcol input.timex{padding:8px 6px}
 .timesel:disabled{color:#c8c2ba;background:#f6f4f1}
 /* Special dates stay tucked away until needed. */
-.specialbox{margin:12px 16px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:12px}
+.specialbox{width:calc(100% - 32px);max-width:448px;max-height:calc(100dvh - 48px);margin:auto;border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;color:var(--ink);overflow:auto}
+.specialbox::backdrop{background:rgba(30,28,26,.25)}
+.specialheading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.specialheading h2{font-size:16px;margin:0}
+#calmenu[hidden],#calmenubtn[hidden]{display:none}
+#calmenubtn{position:absolute;left:16px;top:20px;width:32px;height:28px}
+#calmenu{left:16px;right:auto;top:52px;z-index:30}
 .specialbox summary{font-size:14px;font-weight:600;cursor:pointer}
 .specialhint{font-size:12px;color:var(--muted);line-height:1.5;margin:10px 0}
 .specialform[hidden]{display:none}
@@ -183,6 +189,8 @@ section[hidden]{display:none}
 <div class="wrap">
 <header>
   <h1 id="apptitle">To-dos</h1>
+  <button type="button" class="more" id="calmenubtn" aria-label="Calendar menu" aria-expanded="false" hidden>&#8943;</button>
+  <div class="rmenu" id="calmenu" hidden><button type="button" id="managespecial">Manage special dates</button></div>
   <button class="bkbtn" id="bktoggle" aria-expanded="false">Backup</button>
 </header>
 <div class="card" id="bkpanel" hidden>
@@ -260,8 +268,8 @@ section[hidden]{display:none}
   <button class="small" id="tltoggle" hidden>Timeline</button>
   <div class="card" id="tlcard" hidden></div>
   <div id="events"></div>
-  <details class="specialbox" id="specialbox">
-    <summary>Special dates</summary>
+  <dialog class="specialbox" id="specialbox" aria-labelledby="specialtitle">
+    <div class="specialheading"><h2 id="specialtitle">Manage special dates</h2><button type="button" class="edit" id="specialdone">Done</button></div>
     <p class="specialhint">Birthdays, anniversaries and other yearly occasions. Preparation tasks appear in the planner, not as phone notifications.</p>
     <div id="speciallist"></div>
     <button type="button" class="edit" id="specialnew" style="margin-top:12px">Add special date</button>
@@ -276,7 +284,7 @@ section[hidden]{display:none}
       <p class="specialhint" style="margin:0">29 February is observed on 28 February in non-leap years. Changes apply to the yearly series.</p>
       <div class="specialactions"><button type="submit" class="btn tiny">Save special date</button><button type="button" class="edit" id="specialcancel">Cancel</button></div>
     </form>
-  </details>
+  </dialog>
 </section>
 
 <section id="view-groc" hidden>
@@ -939,7 +947,7 @@ function renderSpecialList(){
 function openSpecial(id){
   specialEditId=id||null;
   var e=events.find(function(e){return e.id===id}),t=e&&specialTask(id);
-  $('#specialbox').open=true;$('#specialform').hidden=false;
+  if(!$('#specialbox').open)$('#specialbox').showModal();$('#specialform').hidden=false;
   $('#specialname').value=e?e.text:'';$('#specialdate').value=e?e.date:sel;
   $('#specialprep').checked=!!t;$('#specialprepfields').hidden=!t;
   $('#specialtask').required=!!t;$('#specialtask').value=t?t.text:'';$('#speciallead').value=t?t.lead:7;
@@ -948,6 +956,9 @@ function openSpecial(id){
   $('#specialform').scrollIntoView({block:'nearest'});
 }
 function closeSpecial(){specialEditId=null;$('#specialform').hidden=true;$('#specialnew').hidden=false}
+$('#calmenubtn').addEventListener('click',function(){var m=$('#calmenu');m.hidden=!m.hidden;this.setAttribute('aria-expanded',String(!m.hidden))});
+$('#managespecial').addEventListener('click',function(){$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');closeSpecial();renderSpecialList();$('#specialbox').showModal()});
+$('#specialdone').addEventListener('click',function(){closeSpecial();$('#specialbox').close()});
 $('#specialnew').addEventListener('click',function(){openSpecial(null)});
 $('#specialcancel').addEventListener('click',closeSpecial);
 $('#specialprep').addEventListener('change',function(){$('#specialprepfields').hidden=!this.checked;$('#specialtask').required=this.checked});
@@ -974,7 +985,7 @@ $('#specialform').addEventListener('submit',function(e){
     if(t.specialDate!==date||t.lead!==lead)delete t.doneBy;
     t.text=task;t.date=keyOf(d);t.rep='special';t.specialId=ev.id;t.specialDate=date;t.lead=lead;
   }else todos=todos.filter(function(t){return t.specialId!==ev.id});
-  sel=date;closeSpecial();save();renderAll();noteMsg('Special date saved');
+  sel=date;closeSpecial();$('#specialbox').close();save();renderAll();noteMsg('Special date saved');
 });
 /* A linked task's schedule is edited with its occasion, not independently. */
 ['#list','#events'].forEach(function(selector){$(selector).addEventListener('click',function(e){
@@ -1068,6 +1079,8 @@ function doRestore(){
   renderBkStatus();
 }
 function switchTab(t){
+  $('#calmenubtn').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
+  if(t!=='cal'&&$('#specialbox').open)$('#specialbox').close();
   calOpen=false;
   $('#view-todos').hidden=(t!=='todos');
   $('#view-cal').hidden=(t!=='cal');
