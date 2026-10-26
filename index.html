@@ -176,6 +176,7 @@ section[hidden]{display:none}
 .specialitem{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:10px;margin-top:10px;font-size:14px}
 .specialitem .specialname{flex:1;min-width:0;overflow-wrap:anywhere}
 .specialitem small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+#grid .day .dot.specialdot{background:#dc2626}
 </style>
 </head>
 <body>
@@ -613,7 +614,7 @@ function renderTimeline(){
 }
 $('#tltoggle').addEventListener('click',function(){tlOpen=!tlOpen;renderTimeline()});
 var calOpen=false,tcalOpen=false;
-function buildMonth(){
+function buildMonth(specialMarkers){
   var sd=dayFromKey(sel),cy=sd.getFullYear(),cm=sd.getMonth();
   var first=new Date(cy,cm,1).getDay();
   var days=new Date(cy,cm+1,0).getDate();
@@ -626,13 +627,14 @@ function buildMonth(){
     if(k===keyOf(today))cls+=' today';
     if(k===sel)cls+=' sel';
     if(events.some(function(e){return occursOn(e,k)})||todos.some(function(x){return (!repOf(x)||x.rep==='special')&&occursOn(x,k)}))cls+=' hasdot';
-    html+='<div class="'+cls+'" data-key="'+k+'">'+d+(cls.indexOf('hasdot')>-1?'<span class="dot"></span>':'')+'</div>';
+    var special=specialMarkers&&events.some(function(e){return e.special&&occursOn(e,k)});
+    html+='<div class="'+cls+'" data-key="'+k+'"'+(special?' aria-label="'+d+' '+MONTHS[cm]+' - special date"':'')+'>'+d+(cls.indexOf('hasdot')>-1?'<span class="dot'+(special?' specialdot':'')+'"></span>':'')+'</div>';
   }
   return {html:html,label:MONTHS[cm]+' '+cy};
 }
 function renderCal(){
   renderSpecialList();
-  var mg=buildMonth();
+  var mg=buildMonth(true);
   $('#mlabel').textContent=mg.label;
   $('#grid').innerHTML=mg.html;
   $('#clabel').textContent=fmtLabel(sel);
