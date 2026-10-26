@@ -31,6 +31,8 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .daterow.hastoday{gap:8px}
 .daterow.hastoday::before{content:'';flex:none;width:48px}
 .daterow.hastoday .datebtn{min-width:130px}
+.daterow.hastoday .datebtn{white-space:nowrap}
+@media(max-width:374px){.daterow.hastoday{gap:4px}.daterow.hastoday::before{display:none}.daterow.hastoday .datebtn{min-width:0;font-size:15px}.daterow.hastoday .navbtn{width:34px}.daterow.hastoday .todaypill{width:44px;font-size:12px}}
 .catrow{display:flex;flex-direction:column;gap:8px;margin:12px 16px 0;align-items:flex-start}
 .catmenu{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #e3ded8;border-radius:10px;padding:10px;box-shadow:0 1px 3px rgba(30,28,26,.08)}
 .caret{font-size:10px;color:var(--muted)}
