@@ -130,7 +130,7 @@ section[hidden]{display:none}
 #bkstatus{font-size:12px;color:var(--muted);margin:10px 0 0}
 .todo,.eventrow{position:relative}
 .more{border:none;background:none;color:#9d968e;font-size:18px;padding:4px 8px;cursor:pointer;flex:none;line-height:1}
-.rmenu{position:absolute;right:8px;top:calc(100% - 4px);background:#fff;border:1px solid #e3ded8;border-radius:10px;box-shadow:0 4px 16px rgba(30,28,26,.14);padding:4px;z-index:20;display:flex;flex-direction:column;min-width:110px}
+.rmenu{scroll-margin-bottom:96px;position:absolute;right:8px;top:calc(100% - 4px);background:#fff;border:1px solid #e3ded8;border-radius:10px;box-shadow:0 4px 16px rgba(30,28,26,.14);padding:4px;z-index:20;display:flex;flex-direction:column;min-width:110px}
 .rmenu button{border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-align:left;padding:9px 12px;border-radius:7px;cursor:pointer}
 .rmenu button:active{background:#f6f4f1}
 .rmenu button[data-act=del]{color:#b91c1c}
@@ -175,6 +175,9 @@ section[hidden]{display:none}
 .specialheading{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .specialheading h2{font-size:16px;margin:0}
 #calmenu[hidden],#calmenubtn[hidden]{display:none}
+#tccaret,#ccaret{display:none}
+#gback{position:absolute;left:16px;top:20px;width:32px;height:28px;border:1px solid #e3ded8;background:#fff;border-radius:8px;font-size:18px;line-height:1;color:var(--muted);cursor:pointer;padding:0}
+#gback[hidden]{display:none}
 #calmenubtn{position:absolute;left:16px;top:20px;width:32px;height:28px}
 #calmenu{left:16px;right:auto;top:52px;z-index:30}
 .specialbox summary{font-size:14px;font-weight:600;cursor:pointer}
@@ -198,6 +201,7 @@ section[hidden]{display:none}
   <h1 id="apptitle">To-dos</h1>
   <button type="button" class="more" id="calmenubtn" aria-label="Menu" aria-expanded="false" hidden>&#8943;</button>
   <div class="rmenu" id="calmenu" hidden><button type="button" id="opengroc" hidden>Groceries</button><button type="button" id="managespecial" hidden>Manage special dates</button></div>
+  <button type="button" id="gback" aria-label="Back to To-dos" hidden>&#8249;</button>
   <button class="bkbtn" id="bktoggle" aria-expanded="false">Backup</button>
 </header>
 <div class="card" id="bkpanel" hidden>
@@ -1085,7 +1089,7 @@ function doRestore(){
   renderBkStatus();
 }
 function switchTab(t){
-  $('#calmenubtn').hidden=(t==='groc');$('#opengroc').hidden=(t!=='todos');$('#managespecial').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
+  $('#calmenubtn').hidden=(t==='groc');$('#gback').hidden=(t!=='groc');$('#opengroc').hidden=(t!=='todos');$('#managespecial').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
   if(t!=='cal'&&$('#specialbox').open)$('#specialbox').close();
   calOpen=false;
   $('#view-todos').hidden=(t!=='todos');
@@ -1097,8 +1101,21 @@ function switchTab(t){
   menuId=null;
   renderAll();
 }
+document.addEventListener('click',function(e){
+  var onMenu=e.target.closest&&e.target.closest('[data-act=menu]');
+  if(menuId&&!onMenu&&!e.target.closest('.rmenu')){menuId=null;renderAll()}
+  document.body.style.paddingBottom=menuId?'200px':'';
+  if(onMenu&&menuId){setTimeout(function(){
+    var m=null;
+    var ms=document.querySelectorAll('.rmenu');for(var i=0;i<ms.length;i++)if(ms[i].offsetParent&&ms[i].id!=='calmenu'){m=ms[i];break}
+    if(!m)return;
+    var nav=document.querySelector('nav'),lim=window.innerHeight-(nav?nav.offsetHeight:80)-8,b=m.getBoundingClientRect().bottom;
+    if(b>lim)window.scrollBy({top:b-lim,behavior:'auto'});
+  },30)}
+});
 $('#tab-todos').addEventListener('click',function(){switchTab('todos')});
 $('#tab-cal').addEventListener('click',function(){switchTab('cal')});
+$('#gback').addEventListener('click',function(){switchTab('todos')});
 $('#opengroc').addEventListener('click',function(){switchTab('groc')});
 renderChips();
 switchTab('todos');
