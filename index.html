@@ -34,10 +34,18 @@ header h1 .oatlogo{display:block}
 .daterow.hastoday .datebtn{min-width:130px}
 .daterow.hastoday .datebtn{white-space:nowrap}
 @media(max-width:374px){.daterow.hastoday{gap:4px}.daterow.hastoday::before{display:none}.daterow.hastoday .datebtn{min-width:0;font-size:15px}.daterow.hastoday .navbtn{width:34px}.daterow.hastoday .todaypill{width:44px;font-size:12px}}
-.viewrow{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:4px 16px 10px;font-size:13px;color:var(--muted)}
-.viewrow select{min-height:40px;max-width:calc(100% - 42px);border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font:inherit;padding:8px 28px 8px 10px}
+.taskcontrols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:8px;margin:12px 16px 0}
+.taskcontrols .catrow{display:contents}
+.taskcontrols .chip.trig{grid-column:1;grid-row:1}
+.taskcontrols .chip.trig,.viewrow select{width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);font:inherit;font-size:13px;font-weight:400;padding:8px 10px;text-align:left}
+.taskcontrols .chip.trig{justify-content:space-between}
+.taskcontrols .chip.trig.on{background:#fff;border-color:var(--line);color:var(--muted);font-weight:400;padding:8px 10px}
+.taskcontrols .catmenu{grid-column:1/-1;grid-row:2;min-width:0}
+.viewrow{min-width:0;grid-column:2;grid-row:1}
+.viewrow label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.viewrow select{padding-right:24px}
 .viewrow select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.taskgroup{margin:16px 16px 6px;font-size:13px;font-weight:600;color:var(--muted)}
+.taskgroup{margin:6px 2px -4px;font-size:13px;line-height:18px;font-weight:600;color:var(--muted)}
 .reorderhint{font-size:12px;line-height:1.4;color:var(--muted);flex-basis:100%;margin:0}
 .catrow{display:flex;flex-direction:column;gap:8px;margin:12px 16px 0;align-items:flex-start}
 .catmenu{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #e3ded8;border-radius:10px;padding:10px;box-shadow:0 1px 3px rgba(30,28,26,.08)}
@@ -161,6 +169,7 @@ section[hidden]{display:none}
 .movepick .day{height:36px}
 .ebtn{border:1px solid var(--line);background:#fff;color:var(--teal);font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;flex:none}
 .eact input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);width:126px;flex:none;font-size:13px}
+.ebtn[data-act=deleteearlier]{color:#b91c1c}
 .emuted{color:#9d968e;font-size:12px;font-weight:400}
 #tlcard .bktitle{font-weight:700;margin-bottom:6px}
 .tlrow{display:flex;gap:10px;align-items:baseline;padding:4px 0;font-size:14px;border-top:1px solid #f0ede9}
@@ -245,12 +254,14 @@ section[hidden]{display:none}
     <div id="ptext" style="font-weight:700"></div>
     <div class="pbar"><div class="pfill" id="pfill"></div></div>
   </div>
+  <div class="taskcontrols">
   <div class="catrow" id="catrow"></div>
+  <div class="viewrow"><label for="taskview">View</label><select id="taskview"><option value="normal">Normal</option><option value="priority">High priority first</option><option value="category">By category</option></select></div>
+  </div>
   <div class="addrow">
     <input type="text" id="tinput" placeholder="Add a task" autocomplete="off">
     <button class="btn" id="tadd">+</button>
   </div>
-  <div class="viewrow"><label for="taskview">View</label><select id="taskview"><option value="normal">Normal</option><option value="priority">High priority first</option><option value="category">By category</option></select></div>
   <div id="earlier"></div>
   <div id="list"></div>
   <button class="small" id="cleardone" hidden>Clear finished tasks</button>
@@ -542,7 +553,7 @@ $('#taskview').addEventListener('change',function(){
   // Changing a view must not discard an unsaved edit.
   var editing=$('#list .editing'),draft={};
   if(editing)editing.querySelectorAll('input,select').forEach(function(el){draft[el.className]={value:el.value,checked:el.checked}});
-  taskView=this.value;menuId=null;renderTodos();
+  taskView=this.value;menuId=null;renderTodos();renderCal();
   editing=$('#list .editing');
   if(editing)editing.querySelectorAll('input,select').forEach(function(el){var d=draft[el.className];if(d){el.value=d.value;if(el.type==='checkbox')el.checked=d.checked}});
 });
@@ -573,7 +584,7 @@ function renderEarlier(){
   if(!old.length){box.innerHTML='';return}
   var h='<details class="donesec"'+(earlierOpen?' open':'')+'><summary><span class="dcaret">\u25be</span>Earlier unfinished ('+old.length+')</summary><div class="donerows">';
   for(i=0;i<old.length;i++){t=old[i];
-    h+='<div class="todo erow" data-id="'+t.id+'">'+(t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+'<div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><button class="ebtn" data-act="pickdate">Choose another date</button></div>'+(movePickId===t.id?buildMovePick():'')+'</div>';
+    h+='<div class="todo erow" data-id="'+t.id+'">'+(t.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+'<div class="txt">'+esc(t.text)+' <span class="emuted">'+fmtLabel(t.date)+'</span></div><div class="eact"><button class="ebtn" data-act="pickdate">Choose another date</button><button type="button" class="ebtn" data-act="deleteearlier">Delete</button></div>'+(movePickId===t.id?buildMovePick():'')+'</div>';
   }
   box.innerHTML=h+'</div></details>';
   var ds=box.querySelector('.donesec');
@@ -597,6 +608,11 @@ function buildMovePick(){
 $('#earlier').addEventListener('click',function(e){
   var act=e.target.closest('[data-act]');
   var row=e.target.closest('.erow');
+  if(act&&act.getAttribute('data-act')==='deleteearlier'&&row){
+    var id=row.getAttribute('data-id');
+    if(movePickId===id)movePickId=null;
+    menuId=null;editTid=null;deleteTodo(id);renderAll();return;
+  }
   if(act&&act.getAttribute('data-act')==='pickdate'&&row){
     if(movePickId===row.getAttribute('data-id')){movePickId=null}
     else{movePickId=row.getAttribute('data-id');movePickY=today.getFullYear();movePickM=today.getMonth()}
@@ -631,16 +647,23 @@ function renderDay(){
       html+='<div class="eventrow" data-id="'+e.id+'" data-kind="ev"><span class="etime'+(e.time?'':' notime')+'">'+(e.special?'Yearly':e.time?esc(tt):'All day')+'</span>'+(repOf(e)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(e.text)+'</div><button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===e.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(e)?'Delete series':'Delete')+'</button></div>':'')+'</div>';
     }
   }
-  var tks=todos.filter(function(x){return occursOn(x,sel)});
+  var tks=taskViewRows(todos.filter(function(x){return occursOn(x,sel)})),lastActiveCat=null,lastDoneCat=null;
   for(k=0;k<tks.length;k++){r=tks[k];
     var row;
     if(r.id===editTid){
-      row=taskEditRow(r).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
+      row=taskEditRow(r,true).replace('class="todo editing"','class="eventrow editing" data-kind="tsk"');
     } else {
       var rmenu='<div class="rmenu">'+((!repOf(r)&&!r.done&&r.date<keyOf(today))?'<button type="button" data-act="mtoday">Move to today</button>':'')+'<button type="button" data-act="edit">Edit</button><button type="button" data-act="del">'+(repOf(r)?'Delete series':'Delete')+'</button></div>';
-      row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div>'+(r.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+(r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
+      row='<div class="eventrow'+(isDoneOn(r,sel)?' done':'')+(noteOpenId===r.id?' wrapnote':'')+'" data-id="'+r.id+'" data-kind="tsk"><div class="check" data-act="toggle">'+(isDoneOn(r,sel)?'\u2713':'')+'</div>'+(r.pri==='hi'?'<span class="pri" style="background:'+PRIS.hi.color+'"></span>':'')+(taskView!=='category'&&r.cat&&CATS[r.cat]?'<span class="tag" style="background:'+CATS[r.cat].bg+';color:'+CATS[r.cat].color+'">'+CATS[r.cat].label+'</span>':'')+(repOf(r)?'<span class="rep">\u21bb</span>':'')+'<div class="txt">'+esc(r.text)+'</div>'+(r.note?'<button class="notebtn" data-act="note">note</button>':'')+'<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===r.id?rmenu:'')+(noteOpenId===r.id&&r.note?'<div class="todonote">'+esc(r.note)+'</div>':'')+'</div>';
     }
-    if(isDoneOn(r,sel)){doneHtml+=row;nd++}else html+=row;
+    var cat=CATS[r.cat]?r.cat:'',heading='';
+    if(isDoneOn(r,sel)){
+      if(taskView==='category'&&cat!==lastDoneCat){heading='<h2 class="taskgroup">'+esc(cat?CATS[cat].label:'Uncategorised')+'</h2>';lastDoneCat=cat}
+      doneHtml+=heading+row;nd++;
+    }else{
+      if(taskView==='category'&&cat!==lastActiveCat){heading='<h2 class="taskgroup">'+esc(cat?CATS[cat].label:'Uncategorised')+'</h2>';lastActiveCat=cat}
+      html+=heading+row;
+    }
   }
   if(doneHtml)html+='<details class="donesec"'+(doneOpenC?' open':'')+'><summary><span class="dcaret">\u25be</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div></details>';
   el.innerHTML=html||'<div class="empty">Nothing planned</div>';
@@ -884,7 +907,7 @@ $('#events').addEventListener('click',function(e){
   } else if(kind==='ev'){
     if(!row.classList.contains('editing')&&!e.target.closest('input,select,button,a')){editId=id; renderCal()}
   } else if(kind==='tsk'&&(e.target.closest('[data-act=up]')||e.target.closest('[data-act=dn]'))){
-    moveTodo(id,e.target.closest('[data-act=up]')?'up':'dn',sel); renderCal();
+    if(taskView==='normal')moveTodo(id,e.target.closest('[data-act=up]')?'up':'dn',sel); renderCal();
   } else if(kind==='tsk'&&e.target.closest('.txt')){
     editTid=id; renderCal();
   }
