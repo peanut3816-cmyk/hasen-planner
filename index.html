@@ -125,6 +125,7 @@ section[hidden]{display:none}
 .donesec summary::-webkit-details-marker{display:none}
 .donesec .dcaret{font-size:10px;transition:transform .15s}
 .donesec[open] .dcaret{transform:rotate(180deg)}
+.donesec>.small{margin:6px 2px 8px}
 .donesec .donerows{display:flex;flex-direction:column;gap:8px;padding:2px 0 4px}
 .edtimes input[type=date]{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:inherit;background:#fff;color:var(--ink);flex:1;min-width:140px;text-align:left}
 .edtimes select.eerep,.edtimes select.eecat{min-width:140px}
@@ -264,7 +265,6 @@ section[hidden]{display:none}
   </div>
   <div id="earlier"></div>
   <div id="list"></div>
-  <button class="small" id="cleardone" hidden>Clear finished tasks</button>
 </section>
 
 <section id="view-cal" hidden>
@@ -506,6 +506,7 @@ function taskEditRow(t,smartView){
     '</div>';
 }
 var doneOpenT=false,doneOpenG=false,doneOpenC=false;
+function clearDoneBtn(){return todos.some(function(x){return !repOf(x)&&x.date===sel&&x.done})?'<button type="button" class="small" data-act="cleardone">Clear finished tasks</button>':''}
 function bindDoneSec(el,which){
   var ds=el.querySelector('.donesec'); if(!ds)return;
   ds.addEventListener('toggle',function(){
@@ -569,10 +570,9 @@ function renderTodos(){
   var el=$('#list'),rows=todos.filter(function(x){return occursOn(x,sel)});
   var active=rows.filter(function(x){return !isDoneOn(x,sel)}),completed=rows.filter(function(x){return isDoneOn(x,sel)});
   var html=taskViewHtml(active),doneHtml=taskViewHtml(completed),nd=completed.length;
-  if(doneHtml)html+='<details class="donesec"'+(doneOpenT?' open':'')+'><summary><span class="dcaret">▾</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div></details>';
+  if(doneHtml)html+='<details class="donesec"'+(doneOpenT?' open':'')+'><summary><span class="dcaret">▾</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div>'+clearDoneBtn()+'</details>';
   el.innerHTML=html||'<div class="empty">No tasks for this day</div>';
   bindDoneSec(el,'t');
-  $('#cleardone').hidden=!rows.some(function(x){return !repOf(x)&&x.date===sel&&x.done});
   renderProgress();
   renderEarlier();
 }
@@ -665,7 +665,7 @@ function renderDay(){
       html+=heading+row;
     }
   }
-  if(doneHtml)html+='<details class="donesec"'+(doneOpenC?' open':'')+'><summary><span class="dcaret">\u25be</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div></details>';
+  if(doneHtml)html+='<details class="donesec"'+(doneOpenC?' open':'')+'><summary><span class="dcaret">\u25be</span>Completed ('+nd+')</summary><div class="donerows">'+doneHtml+'</div>'+clearDoneBtn()+'</details>';
   el.innerHTML=html||'<div class="empty">Nothing planned</div>';
   bindDoneSec(el,'c');
   var tws=el.querySelectorAll('.twrap');
@@ -844,8 +844,9 @@ $('#list').addEventListener('click',function(e){
     editTid=id; renderTodos();
   }
 });
-$('#cleardone').addEventListener('click',function(){
-  todos=todos.filter(function(x){return !(!repOf(x)&&x.date===sel&&x.done)});save();renderTodos()});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('[data-act=cleardone]'))return;
+  todos=todos.filter(function(x){return !(!repOf(x)&&x.date===sel&&x.done)});save();renderTodos();renderCal()});
 $('#events').addEventListener('click',function(e){
   var row=e.target.closest('.eventrow'); if(!row)return;
   var id=row.getAttribute('data-id'),kind=row.getAttribute('data-kind');
