@@ -189,8 +189,8 @@ section[hidden]{display:none}
 <div class="wrap">
 <header>
   <h1 id="apptitle">To-dos</h1>
-  <button type="button" class="more" id="calmenubtn" aria-label="Calendar menu" aria-expanded="false" hidden>&#8943;</button>
-  <div class="rmenu" id="calmenu" hidden><button type="button" id="managespecial">Manage special dates</button></div>
+  <button type="button" class="more" id="calmenubtn" aria-label="Menu" aria-expanded="false" hidden>&#8943;</button>
+  <div class="rmenu" id="calmenu" hidden><button type="button" id="opengroc" hidden>Groceries</button><button type="button" id="managespecial" hidden>Manage special dates</button></div>
   <button class="bkbtn" id="bktoggle" aria-expanded="false">Backup</button>
 </header>
 <div class="card" id="bkpanel" hidden>
@@ -300,7 +300,6 @@ section[hidden]{display:none}
 <nav><div class="tabbar">
   <button id="tab-todos" class="on">To-dos</button>
   <button id="tab-cal">Calendar</button>
-  <button id="tab-groc">Groceries</button>
 </div></nav>
 
 <script>
@@ -1079,7 +1078,7 @@ function doRestore(){
   renderBkStatus();
 }
 function switchTab(t){
-  $('#calmenubtn').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
+  $('#calmenubtn').hidden=(t==='groc');$('#opengroc').hidden=(t!=='todos');$('#managespecial').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
   if(t!=='cal'&&$('#specialbox').open)$('#specialbox').close();
   calOpen=false;
   $('#view-todos').hidden=(t!=='todos');
@@ -1087,16 +1086,15 @@ function switchTab(t){
   $('#view-groc').hidden=(t!=='groc');
   $('#tab-todos').className=(t==='todos'?'on':'');
   $('#tab-cal').className=(t==='cal'?'on':'');
-  $('#tab-groc').className=(t==='groc'?'on':'');
   $('#apptitle').textContent=(t==='todos'?'To-dos':t==='cal'?'Calendar':'Groceries');
   menuId=null;
   renderAll();
 }
 $('#tab-todos').addEventListener('click',function(){switchTab('todos')});
 $('#tab-cal').addEventListener('click',function(){switchTab('cal')});
-$('#tab-groc').addEventListener('click',function(){switchTab('groc')});
+$('#opengroc').addEventListener('click',function(){switchTab('groc')});
 renderChips();
-renderAll();
+switchTab('todos');
 </script>
 </body>
 </html>
