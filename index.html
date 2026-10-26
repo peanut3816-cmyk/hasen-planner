@@ -26,14 +26,19 @@ header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
 .daterow{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 16px 0}
 .daterow h2{font-size:16px;margin:0;font-weight:600;min-width:170px;text-align:center}
 .navbtn{width:36px;height:36px;border-radius:8px;border:1px solid #e3ded8;background:#fff;font-size:15px;color:var(--muted);font-weight:600;cursor:pointer;flex:none}
-.todaypill[hidden]{display:none}
-.todaypill{display:block;margin:8px auto 0;border:1px solid #e3ded8;background:#fff;color:var(--mint);font:inherit;font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer}
+.todaypill{flex:none;width:48px;min-height:36px;border:none;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:400;padding:0;text-align:center;cursor:pointer}
+.todaypill[hidden]{display:block;visibility:hidden;pointer-events:none}
+.daterow.hastoday{gap:8px}
+.daterow.hastoday::before{content:'';flex:none;width:48px}
+.daterow.hastoday .datebtn{min-width:130px}
 .catrow{display:flex;flex-direction:column;gap:8px;margin:12px 16px 0;align-items:flex-start}
 .catmenu{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #e3ded8;border-radius:10px;padding:10px;box-shadow:0 1px 3px rgba(30,28,26,.08)}
 .caret{font-size:10px;color:var(--muted)}
 .chip{border:1px solid #e3ded8;background:#fff;border-radius:8px;padding:7px 13px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
 .chip .cd{width:10px;height:10px;border-radius:999px;flex:none}
 .chip.on{color:var(--ink);border-color:var(--mint);background:var(--mint-light)}
+.chip.trig{border-color:transparent;background:none;font-weight:400;padding:8px 0;min-height:36px}
+.chip.trig.on{border-color:var(--mint);background:var(--mint-light);font-weight:600;padding:8px 13px}
 .addrow{display:flex;gap:8px;margin:12px 16px}
 .addrow input[type=text]{flex:1;min-width:0;border:1px solid #e3ded8;border-radius:8px;padding:12px 14px;font:inherit;background:#fff;color:var(--ink)}
 .addrow input:focus{outline:none;border-color:var(--mint);box-shadow:0 0 0 3px rgba(43,43,43,.12)}
@@ -206,12 +211,12 @@ section[hidden]{display:none}
 </div>
 
 <section id="view-todos">
-  <div class="daterow">
+  <div class="daterow hastoday">
     <button class="navbtn" id="dprev">‹</button>
     <button class="datebtn" id="tdatebtn" aria-expanded="false"><span id="todolabel"></span> <span class="caret" id="tccaret">▾</span></button>
     <button class="navbtn" id="dnext">›</button>
+    <button class="todaypill" id="gotoday" aria-label="Back to today" hidden>Today</button>
   </div>
-  <button class="todaypill" id="gotoday" hidden>Back to today</button>
   <div id="monthbox2" hidden>
     <div class="calhead">
       <button class="navbtn" id="tmprev" aria-label="Previous month">‹</button>
@@ -235,12 +240,12 @@ section[hidden]{display:none}
 </section>
 
 <section id="view-cal" hidden>
-  <div class="daterow">
+  <div class="daterow hastoday">
     <button class="navbtn" id="cprev" aria-label="Previous day">‹</button>
     <button class="datebtn" id="cdatebtn" aria-expanded="false"><span id="clabel"></span> <span class="caret" id="ccaret">▾</span></button>
     <button class="navbtn" id="cnext" aria-label="Next day">›</button>
+    <button class="todaypill" id="gotodaycal" aria-label="Back to today" hidden>Today</button>
   </div>
-  <button class="todaypill" id="gotodaycal" hidden>Back to today</button>
   <div id="monthbox" hidden>
     <div class="calhead">
       <button class="navbtn" id="mprev" aria-label="Previous month">‹</button>
@@ -426,7 +431,7 @@ function fmtLabel(k){var d=dayFromKey(k);return WDAYS[d.getDay()]+' '+d.getDate(
 var catOpen=false;
 function renderChips(){
   var cur=CATS[curCat],k;
-  var html='<button class="chip on" data-act="catmenu">'+(cur?cur.label:'Choose a category')+' <span class="caret">'+(catOpen?'\u25b4':'\u25be')+'</span></button>';
+  var html='<button class="chip trig'+(cur?' on':'')+'" data-act="catmenu">'+(cur?cur.label:'Choose a category')+' <span class="caret">'+(catOpen?'\u25b4':'\u25be')+'</span></button>';
   if(catOpen){
     html+='<div class="catmenu">';
     for(k in CATS){
