@@ -106,7 +106,13 @@ section[hidden]{display:none}
 .donesec[open] .dcaret{transform:rotate(180deg)}
 .donesec .donerows{display:flex;flex-direction:column;gap:8px;padding:2px 0 4px}
 .edtimes input[type=date]{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:inherit;background:#fff;color:var(--ink);flex:1;min-width:140px;text-align:left}
-.edtimes select.eerep,.edtimes select.eecat,.edtimes select.eepri{min-width:140px}
+.edtimes select.eerep,.edtimes select.eecat{min-width:140px}
+.prioritytoggle{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;min-height:40px;font-size:13px;color:var(--ink);cursor:pointer}
+.prioritytoggle input{appearance:none;-webkit-appearance:none;position:relative;width:36px;height:22px;border:1px solid #d8d2ca;border-radius:999px;background:#e3ded8;flex:none;margin:0;cursor:pointer}
+.prioritytoggle input:before{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0002}
+.prioritytoggle input:checked{background:var(--mint);border-color:var(--mint)}
+.prioritytoggle input:checked:before{left:16px}
+.prioritytoggle input:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 .edtimes select.eerep{min-width:170px}
 .bkbtn{position:absolute;top:20px;right:16px;border:1px solid #e3ded8;background:#fff;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;z-index:2}
 #bkpanel .bktitle{font-weight:700;margin-bottom:4px}
@@ -430,11 +436,6 @@ function renderProgress(){
   $('#ptext').textContent=done+' of '+n+' done';
   $('#pfill').style.width=n?Math.round(100*done/n)+'%':'0%';
 }
-function priOptions(p){
-  var h='';
-  for(var k in PRIS){h+='<option value="'+k+'"'+(p===k?' selected':'')+'>'+PRIS[k].label+'</option>'}
-  return h;
-}
 function moveTodo(id,dir,date){
   var ai=-1,k;
   for(k=0;k<todos.length;k++)if(todos[k].id===id){ai=k;break}
@@ -455,7 +456,7 @@ function taskEditRow(t){
   return '<div class="todo editing" data-id="'+t.id+'">'+
     '<div class="check" data-act="toggle">'+(isDoneOn(t,sel)?'\u2713':'')+'</div>'+
     '<div class="edcol"><input type="text" class="eetext" value="'+esc(t.text)+'">'+
-    '<div class="edtimes"><select class="eecat">'+catOptions(t.cat)+'</select><select class="eepri">'+priOptions(t.pri)+'</select></div>'+
+    '<div class="edtimes"><select class="eecat">'+catOptions(t.cat)+'</select><label class="prioritytoggle"><input type="checkbox" role="switch" class="eepri"'+(t.pri==='hi'?' checked':'')+'>High priority</label></div>'+
     '<div class="edtimes"><input type="date" class="eedate2" value="'+esc(t.date)+'" aria-label="Date"><select class="eerep">'+repOptions(repOf(t))+'</select></div>'+
     '<input type="text" class="eenote" placeholder="Note (optional)" value="'+esc(t.note||'')+'"></div>'+
     '<div class="mvcol"><button class="mv" data-act="up">\u25b2</button><button class="mv" data-act="dn">\u25bc</button></div>'+
@@ -736,7 +737,7 @@ $('#list').addEventListener('click',function(e){
     var nr=row.querySelector('.eerep').value;
     var nn=row.querySelector('.eenote').value.trim();
     for(i=0;i<todos.length;i++)if(todos[i].id===id){var tt=todos[i];
-      tt.text=txt;tt.cat=nc;tt.pri=row.querySelector('.eepri').value||'md';
+      tt.text=txt;tt.cat=nc;tt.pri=(row.querySelector('.eepri').checked?'hi':'md');
       if(nd2)tt.date=nd2;
       if(nr){tt.rep=nr}else{delete tt.rep;delete tt.doneBy}
       if(nn)tt.note=nn;else delete tt.note;
@@ -782,7 +783,7 @@ $('#events').addEventListener('click',function(e){
       var nr=row.querySelector('.eerep').value;
       var nn=row.querySelector('.eenote').value.trim();
       for(i=0;i<todos.length;i++)if(todos[i].id===id){var tt=todos[i];
-        tt.text=txt;tt.cat=nc;tt.pri=row.querySelector('.eepri').value||'md';
+        tt.text=txt;tt.cat=nc;tt.pri=(row.querySelector('.eepri').checked?'hi':'md');
         if(nd2)tt.date=nd2;
         if(nr){tt.rep=nr}else{delete tt.rep;delete tt.doneBy}
         if(nn)tt.note=nn;else delete tt.note;
