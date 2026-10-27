@@ -1464,6 +1464,19 @@ $('#gback').addEventListener('click',function(){
   if(!$('#view-proj').hidden&&projOpenId){projOpenId=null;pMenuId=null;pEditId=null;pEditMs=0;projMode='';pendMid='';msAdding=false;movePickT=null;renderProjects();return}
   switchTab('todos')
 });
+/* Swipe back: right swipe starting at the left edge does whatever the back arrow currently would (project detail -> project list -> To-dos; Groceries -> To-dos). No-op where there is no back. */
+var swX=0,swY=0,swOn=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.changedTouches[0];
+  swOn=(t.clientX<=28)&&!$('#gback').hidden;
+  swX=t.clientX;swY=t.clientY;
+},{passive:true});
+document.addEventListener('touchcancel',function(){swOn=false},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(!swOn)return;swOn=false;
+  var t=e.changedTouches[0];
+  if(t.clientX-swX>=70&&Math.abs(t.clientY-swY)<50)$('#gback').click();
+},{passive:true});
 $('#opengroc').addEventListener('click',function(){switchTab('groc')});
 $('#openproj').addEventListener('click',function(){projOpenId=null;switchTab('proj')});
 renderChips();
