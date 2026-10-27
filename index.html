@@ -26,9 +26,6 @@ header h1 .oatlogo{display:block}
 .pfill{height:100%;width:0;background:var(--mint);border-radius:999px;transition:width .35s}
 @keyframes tickpop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 .check.pop{animation:tickpop .28s}
-@keyframes oatbounce{0%{transform:translateY(-24px) scale(.4);opacity:0}55%{transform:translateY(2px) scale(1.1);opacity:1}78%{transform:translateY(-3px) scale(.97)}100%{transform:translateY(0) scale(1)}}
-.oatbit{position:absolute;left:26px;top:-1px;z-index:5;animation:oatbounce .8s ease-out;pointer-events:none;line-height:0}
-.oatbit svg{display:block}
 .oatoverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:60}
 .oatoverlay .oatbig{animation:oatbigpop 1.4s ease-out forwards}
 @keyframes oatbigpop{0%{transform:scale(.3);opacity:0}18%{transform:scale(1.12);opacity:1}30%{transform:scale(1)}72%{transform:scale(1);opacity:1}100%{transform:scale(.96);opacity:0}}
@@ -1380,16 +1377,9 @@ function holdPop(row,renderFn,after){
   if(row){row.classList.add('done');var c=row.querySelector('.check');if(c){c.textContent='\u2713';c.classList.add('pop');setTimeout(function(){if(c.isConnected)c.classList.remove('pop')},320)}}
   holdT=setTimeout(function(){holdT=null;renderFn();if(after)after()},380);
 }
-var OATBIT='<svg viewBox="0 0 28 48" width="16" height="27" aria-hidden="true"><g transform="translate(14 24) rotate(-22)"><ellipse rx="8" ry="14" fill="#1e1c1a"/><path d="M0 -8V8" stroke="#f6f4f1" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
 var OATBIG='<svg viewBox="0 0 28 48" width="34" height="58" aria-hidden="true"><g transform="translate(14 24) rotate(-22)"><ellipse rx="8" ry="14" fill="#1e1c1a"/><path d="M0 -8V8" stroke="#f6f4f1" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
-function oatPop(mid){
-  var b=document.querySelector('[data-act=pmenu][data-mid="'+mid+'"]');if(!b)return false;
-  var h=b.closest('.mshead');if(!h)return false;
-  var sp=document.createElement('span');sp.className='oatbit';sp.innerHTML=OATBIT;
-  h.appendChild(sp);setTimeout(function(){if(sp.isConnected)sp.remove()},1700);
-  return true;
-}
 function oatOverlay(){
+  if(document.querySelector('.oatoverlay'))return;
   var d=document.createElement('div');d.className='oatoverlay';
   d.innerHTML='<div class="oatbig">'+OATBIG+'</div>';
   document.body.appendChild(d);setTimeout(function(){if(d.isConnected)d.remove()},1500);
@@ -1408,7 +1398,7 @@ function projCelebrate(p,popSel){
   for(i=0;i<p.ms.length;i++)before[p.ms[i].id]=msDone(p,p.ms[i].id);
   return function(){
     if(popSel)popTodo(popSel);
-    for(i=0;i<p.ms.length;i++)if(!before[p.ms[i].id]&&msDone(p,p.ms[i].id)&&!oatPop(p.ms[i].id))oatOverlay();
+    for(i=0;i<p.ms.length;i++)if(!before[p.ms[i].id]&&msDone(p,p.ms[i].id))oatOverlay();
     if(!wasAll&&p.tasks.length&&p.tasks.every(function(x){return x.done}))confetti();
   };
 }
