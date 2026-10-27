@@ -215,13 +215,13 @@ section[hidden]{display:none}
 .projitem .caret{font-size:16px;color:#9d968e}
 .psub{font-size:12px;color:var(--muted);font-weight:400;margin-top:2px}
 .mshead{display:flex;align-items:center;gap:8px;margin:16px 16px 4px;font-weight:600;position:relative}
+.mscaret{border:none;background:none;font:inherit;font-size:11px;color:var(--muted);cursor:pointer;padding:2px;flex:none;line-height:1}
 .mstick{width:20px;height:20px;border-radius:6px;border:1.5px solid #d8d2ca;background:#fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex:none}
 .mstick.on{background:var(--mint);border-color:var(--mint)}
 .msname{flex:1;min-width:0;word-break:break-word}
 .mscount{color:var(--muted);font-size:12px;font-weight:400;flex:none}
 .ptag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#ecebe8;color:#4a4744;flex:none;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .msadd{margin-top:2px}
-.ptdatepick{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;background:#fff;color:var(--ink);width:150px}
 #pendnote .emuted b{font-weight:600;color:var(--ink)}
 #pendnote[hidden]{display:none}
 #msrow[hidden]{display:none}
@@ -398,7 +398,7 @@ var KEY_P='hasen_planner_projects';
 var _rp=readKey(KEY_P); projects=_rp.a;
 if(_snap&&(_rp.bad||_rp.missing)&&Array.isArray(_snap.projects)&&_snap.projects.length){projects=_snap.projects;recovered=true}
 projects=projects.map(cleanProject).filter(function(x){return x});
-var projOpenId=null,pMenuId=null,pEditId=null,pEditMs=0,msAdding=false,datePickId=null,movePickT=null,projMode='',pendMid='';
+var projOpenId=null,pMenuId=null,pEditId=null,pEditMs=0,msAdding=false,movePickT=null,projMode='',pendMid='';
 function pid(){return Date.now()+''+Math.floor(Math.random()*999)}
 function findProj(id){for(var i=0;i<projects.length;i++)if(projects[i].id===id)return projects[i];return null}
 function msOf(p,mid){for(var i=0;i<p.ms.length;i++)if(p.ms[i].id===mid)return p.ms[i];return null}
@@ -1185,10 +1185,12 @@ function renderProjBody(p){
     if(pEditMs===m.id){
       html+='<div class="mshead"><div class="edcol"><input type="text" class="msrename" value="'+esc(m.name)+'" maxlength="200"></div><div class="edbtns"><button class="btn tiny" data-act="msren-save" data-mid="'+m.id+'">Save</button><button class="edit" data-act="pcancel">Cancel</button></div></div>';
     } else {
-      html+='<div class="mshead"><span class="mstick'+(done?' on':'')+'">'+(done?'\u2713':'')+'</span><span class="msname">'+esc(m.name)+'</span><span class="mscount">'+dn+'/'+ts.length+'</span><button class="more" data-act="pmenu" data-mid="'+m.id+'" aria-label="More">&#8943;</button>'+(pMenuId==='ms:'+m.id?'<div class="rmenu"><button type="button" data-act="msrename" data-mid="'+m.id+'">Rename</button><button type="button" data-act="msdel" data-mid="'+m.id+'">Delete milestone</button></div>':'')+'</div>';
+      html+='<div class="mshead"><button type="button" class="mscaret" data-act="mscol" data-mid="'+m.id+'" aria-expanded="'+String(!m.col)+'" aria-label="'+(m.col?'Show tasks':'Hide tasks')+'">'+(m.col?'\u25b8':'\u25be')+'</button><span class="mstick'+(done?' on':'')+'">'+(done?'\u2713':'')+'</span><span class="msname">'+esc(m.name)+'</span><span class="mscount">'+dn+'/'+ts.length+'</span><button class="more" data-act="pmenu" data-mid="'+m.id+'" aria-label="More">&#8943;</button>'+(pMenuId==='ms:'+m.id?'<div class="rmenu"><button type="button" data-act="msrename" data-mid="'+m.id+'">Rename</button><button type="button" data-act="msdel" data-mid="'+m.id+'">Delete milestone</button></div>':'')+'</div>';
     }
-    html+=ts.map(function(t){return pTaskRow(p,t)}).join('')||'<div class="empty" style="padding:8px">No tasks in this milestone</div>';
-    html+='<button class="small msadd" data-act="mstask" data-mid="'+m.id+'">+ Add task</button>';
+    if(!m.col){
+      html+=ts.map(function(t){return pTaskRow(p,t)}).join('')||'<div class="empty" style="padding:8px">No tasks in this milestone</div>';
+      html+='<button class="small msadd" data-act="mstask" data-mid="'+m.id+'">+ Add task</button>';
+    }
   });
   $('#projbody').innerHTML=html;
   $('#msrow').hidden=!msAdding;
@@ -1207,20 +1209,19 @@ function pTaskRow(p,t){
   if(movePickT===t.id){
     menu='<div class="rmenu"><button type="button" data-act="ptmoveto" data-mid="">No milestone</button>'+p.ms.map(function(m){return '<button type="button" data-act="ptmoveto" data-mid="'+m.id+'"'+(t.mid===m.id?' disabled style="color:#9d968e"':'')+'>'+esc(m.name)+'</button>'}).join('')+'</div>';
   } else {
-    menu='<div class="rmenu"><button type="button" data-act="ptedit">Edit</button><button type="button" data-act="ptdate">'+(t.date?'Change date':'Choose a date')+'</button>'+(t.date?'<button type="button" data-act="ptnodate">Remove date</button>':'')+(p.ms.length?'<button type="button" data-act="ptmove">Move to\u2026</button>':'')+'<button type="button" data-act="ptdel">Delete</button></div>';
+    menu='<div class="rmenu"><button type="button" data-act="ptedit">Edit</button>'+(p.ms.length?'<button type="button" data-act="ptmove">Move to\u2026</button>':'')+'<button type="button" data-act="ptdel">Delete</button></div>';
   }
-  var pick=(datePickId===t.id)?'<div class="todonote"><input type="date" class="ptdatepick" value="'+esc(t.date||keyOf(today))+'" aria-label="Choose a date"></div>':'';
-  return '<div class="todo'+(t.done?' done':'')+(pick?' wrapnote':'')+'" data-tid="'+t.id+'">'+
+  return '<div class="todo'+(t.done?' done':'')+'" data-tid="'+t.id+'">'+
     '<div class="check" data-act="ptoggle">'+(t.done?'\u2713':'')+'</div>'+
     '<div class="txt">'+esc(t.text)+(t.date?'<div class="psub">'+fmtLabel(t.date)+'</div>':'')+'</div>'+
-    '<button class="more" data-act="pmenu" aria-label="More">&#8943;</button>'+(pMenuId==='t:'+t.id?menu:'')+pick+'</div>';
+    '<button class="more" data-act="pmenu" aria-label="More">&#8943;</button>'+(pMenuId==='t:'+t.id?menu:'')+'</div>';
 }
 function cleanProject(x){
   if(!x||typeof x.name!=='string'||!x.name.trim())return null;
   var o={id:String(x.id||pid()),name:x.name.slice(0,200),target:'',ms:[],tasks:[]};
   if(typeof x.target==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.target))o.target=x.target;
   var seen={},i;
-  if(Array.isArray(x.ms))for(i=0;i<x.ms.length;i++){var m=x.ms[i];if(!m||typeof m.name!=='string'||!m.name.trim())continue;var mid=String(m.id||('m'+i));if(seen[mid])continue;seen[mid]=1;o.ms.push({id:mid,name:m.name.slice(0,200)})}
+  if(Array.isArray(x.ms))for(i=0;i<x.ms.length;i++){var m=x.ms[i];if(!m||typeof m.name!=='string'||!m.name.trim())continue;var mid=String(m.id||('m'+i));if(seen[mid])continue;seen[mid]=1;var _mo={id:mid,name:m.name.slice(0,200)};if(m.col===true)_mo.col=true;o.ms.push(_mo)}
   if(Array.isArray(x.tasks))for(i=0;i<x.tasks.length;i++){var t=x.tasks[i];if(!t||typeof t.text!=='string'||!t.text.trim())continue;
     var nt={id:String(t.id||pid()),text:t.text.slice(0,500),done:!!t.done,date:'',mid:''};
     if(typeof t.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(t.date))nt.date=t.date;
@@ -1256,7 +1257,7 @@ $('#msnew').addEventListener('click',function(){msAdding=true;renderProjects();$
 $('#pendcancel').addEventListener('click',function(){pendMid='';renderProjects()});
 $('#projlist').addEventListener('click',function(e){
   var r=e.target.closest('.projitem');if(!r)return;
-  projOpenId=r.getAttribute('data-pid');pMenuId=null;pEditId=null;pEditMs=0;projMode='';pendMid='';msAdding=false;datePickId=null;movePickT=null;renderProjects();
+  projOpenId=r.getAttribute('data-pid');pMenuId=null;pEditId=null;pEditMs=0;projMode='';pendMid='';msAdding=false;movePickT=null;renderProjects();
 });
 $('#projdetail').addEventListener('click',function(e){
   var p=findProj(projOpenId);if(!p)return;
@@ -1274,23 +1275,22 @@ $('#projdetail').addEventListener('click',function(e){
   var mid=act.getAttribute('data-mid');
   if(a!=='pmenu')pMenuId=null;
   if(a==='ptoggle'&&t){t.done=!t.done;saveP();renderAll()}
-  else if(a==='ptedit'&&t){pEditId=tid;datePickId=null;renderProjects()}
+  else if(a==='ptedit'&&t){pEditId=tid;renderProjects()}
   else if(a==='ptsave'&&t){
     var txt=row.querySelector('.ptext').value.trim();if(!txt)return;
     t.text=txt;t.date=row.querySelector('.ptdate').value||'';t.mid=row.querySelector('.ptms').value;
     pEditId=null;saveP();renderAll();
   }
-  else if(a==='pcancel'){pEditId=null;pEditMs=0;projMode='';datePickId=null;movePickT=null;renderProjects()}
+  else if(a==='pcancel'){pEditId=null;pEditMs=0;projMode='';movePickT=null;renderProjects()}
   else if(a==='ptdel'&&t){
     var ti=p.tasks.indexOf(t),gone=t;
     p.tasks.splice(ti,1);pEditId=null;saveP();renderAll();
     showUndo('Task deleted',function(){p.tasks.splice(Math.min(ti,p.tasks.length),0,gone);saveP();renderAll()});
   }
-  else if(a==='ptdate'&&t){datePickId=tid;movePickT=null;renderProjects()}
-  else if(a==='ptnodate'&&t){t.date='';saveP();renderAll()}
   else if(a==='ptmove'&&t){movePickT=tid;pMenuId='t:'+tid;renderProjects()}
   else if(a==='ptmoveto'&&t){t.mid=mid||'';movePickT=null;saveP();renderProjects()}
   else if(a==='mstask'&&mid){pendMid=mid;renderProjects();$('#ptinput').focus()}
+  else if(a==='mscol'&&mid){var mc=msOf(p,mid);if(mc){mc.col=!mc.col;saveP();renderProjects()}}
   else if(a==='msrename'&&mid){pEditMs=mid;renderProjects()}
   else if(a==='msren-save'&&mid){
     var m=msOf(p,mid),v=e.target.closest('.mshead').querySelector('.msrename').value.trim();
@@ -1315,13 +1315,6 @@ $('#projdetail').addEventListener('click',function(e){
     var pi=projects.indexOf(p),goneP=p;
     projects.splice(pi,1);projOpenId=null;projMode='';saveP();renderAll();
     showUndo('Project deleted',function(){projects.splice(Math.min(pi,projects.length),0,goneP);saveP();renderAll()});
-  }
-});
-$('#projdetail').addEventListener('change',function(e){
-  var p=findProj(projOpenId);if(!p)return;
-  if(e.target.classList&&e.target.classList.contains('ptdatepick')&&datePickId){
-    for(var i=0;i<p.tasks.length;i++)if(p.tasks[i].id===datePickId){p.tasks[i].date=e.target.value||'';break}
-    datePickId=null;saveP();renderAll();
   }
 });
 $('#projdetail').addEventListener('keydown',function(e){
@@ -1454,6 +1447,8 @@ document.addEventListener('click',function(e){
   if(cm&&!cm.hidden&&!e.target.closest('#calmenu')&&!e.target.closest('#calmenubtn')){cm.hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false')}
   var onMenu=e.target.closest&&e.target.closest('[data-act=menu]');
   if(menuId&&!onMenu&&!e.target.closest('.rmenu')){menuId=null;renderAll()}
+  var onPMenu=e.target.closest&&e.target.closest('[data-act=pmenu]');
+  if(pMenuId&&!onPMenu&&!e.target.closest('.rmenu')){pMenuId=null;movePickT=null;renderProjects()}
   document.body.style.paddingBottom=menuId?'200px':'';
   if(onMenu&&menuId){setTimeout(function(){
     var m=null;
@@ -1466,7 +1461,7 @@ document.addEventListener('click',function(e){
 $('#tab-todos').addEventListener('click',function(){switchTab('todos')});
 $('#tab-cal').addEventListener('click',function(){switchTab('cal')});
 $('#gback').addEventListener('click',function(){
-  if(!$('#view-proj').hidden&&projOpenId){projOpenId=null;pMenuId=null;pEditId=null;pEditMs=0;projMode='';pendMid='';msAdding=false;datePickId=null;movePickT=null;renderProjects();return}
+  if(!$('#view-proj').hidden&&projOpenId){projOpenId=null;pMenuId=null;pEditId=null;pEditMs=0;projMode='';pendMid='';msAdding=false;movePickT=null;renderProjects();return}
   switchTab('todos')
 });
 $('#opengroc').addEventListener('click',function(){switchTab('groc')});
