@@ -27,12 +27,15 @@ header h1 .oatlogo{display:block}
 @keyframes tickpop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 .check.pop{animation:tickpop .28s}
 @keyframes oatbounce{0%{transform:translateY(-24px) scale(.4);opacity:0}55%{transform:translateY(2px) scale(1.1);opacity:1}78%{transform:translateY(-3px) scale(.97)}100%{transform:translateY(0) scale(1)}}
-.oatbit{position:absolute;left:28px;top:2px;z-index:5;animation:oatbounce .6s ease-out;pointer-events:none}
+.oatbit{position:absolute;left:26px;top:-1px;z-index:5;animation:oatbounce .8s ease-out;pointer-events:none;line-height:0}
+.oatbit svg{display:block}
+.oatoverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:60}
+.oatoverlay .oatbig{animation:oatbigpop 1.4s ease-out forwards}
+@keyframes oatbigpop{0%{transform:scale(.3);opacity:0}18%{transform:scale(1.12);opacity:1}30%{transform:scale(1)}72%{transform:scale(1);opacity:1}100%{transform:scale(.96);opacity:0}}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
 .confetti i{position:absolute;top:-14px;width:7px;height:11px;border-radius:2px;animation:conffall linear forwards}
 @keyframes conffall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(75vh) rotate(540deg);opacity:0}}
-.minilogo{display:inline-block;vertical-align:-3px;margin-right:7px}
-.minilogo .oatlogo{display:inline-block;width:41px;height:15px}
+.pagesub{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.2px;margin-top:1px}
 .daterow{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 16px 0}
 .daterow h2{font-size:16px;margin:0;font-weight:600;min-width:170px;text-align:center}
 .navbtn{width:36px;height:36px;border-radius:8px;border:1px solid #e3ded8;background:#fff;font-size:15px;color:var(--muted);font-weight:600;cursor:pointer;flex:none}
@@ -427,8 +430,8 @@ function renderProjects(){
   $('#pjaddwrap').hidden=!!p;
   $('#projlist').hidden=!!p;
   $('#projdetail').hidden=!p;
-  if(!p){renderProjList();if(!$('#view-proj').hidden)setTitle('Projects');return}
-  if(!$('#view-proj').hidden)setTitle(p.name);
+  if(!p){renderProjList();if(!$('#view-proj').hidden)headTitle('Projects');return}
+  if(!$('#view-proj').hidden)headTitle('');
   renderProjCard(p);
   renderProjBody(p);
 }
@@ -1377,12 +1380,19 @@ function holdPop(row,renderFn,after){
   if(row){row.classList.add('done');var c=row.querySelector('.check');if(c){c.textContent='\u2713';c.classList.add('pop');setTimeout(function(){if(c.isConnected)c.classList.remove('pop')},320)}}
   holdT=setTimeout(function(){holdT=null;renderFn();if(after)after()},380);
 }
-var OATBIT='<svg viewBox="0 0 28 48" width="11" height="19" aria-hidden="true"><g transform="translate(14 24) rotate(-22)"><ellipse rx="8" ry="14" fill="#1e1c1a"/><path d="M0 -8V8" stroke="#f6f4f1" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
+var OATBIT='<svg viewBox="0 0 28 48" width="16" height="27" aria-hidden="true"><g transform="translate(14 24) rotate(-22)"><ellipse rx="8" ry="14" fill="#1e1c1a"/><path d="M0 -8V8" stroke="#f6f4f1" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
+var OATBIG='<svg viewBox="0 0 28 48" width="34" height="58" aria-hidden="true"><g transform="translate(14 24) rotate(-22)"><ellipse rx="8" ry="14" fill="#1e1c1a"/><path d="M0 -8V8" stroke="#f6f4f1" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
 function oatPop(mid){
-  var b=document.querySelector('[data-act=pmenu][data-mid="'+mid+'"]');if(!b)return;
-  var h=b.closest('.mshead');if(!h)return;
+  var b=document.querySelector('[data-act=pmenu][data-mid="'+mid+'"]');if(!b)return false;
+  var h=b.closest('.mshead');if(!h)return false;
   var sp=document.createElement('span');sp.className='oatbit';sp.innerHTML=OATBIT;
-  h.appendChild(sp);setTimeout(function(){if(sp.isConnected)sp.remove()},750);
+  h.appendChild(sp);setTimeout(function(){if(sp.isConnected)sp.remove()},1700);
+  return true;
+}
+function oatOverlay(){
+  var d=document.createElement('div');d.className='oatoverlay';
+  d.innerHTML='<div class="oatbig">'+OATBIG+'</div>';
+  document.body.appendChild(d);setTimeout(function(){if(d.isConnected)d.remove()},1500);
 }
 function confetti(){
   var d=document.createElement('div');d.className='confetti';
@@ -1398,7 +1408,7 @@ function projCelebrate(p,popSel){
   for(i=0;i<p.ms.length;i++)before[p.ms[i].id]=msDone(p,p.ms[i].id);
   return function(){
     if(popSel)popTodo(popSel);
-    for(i=0;i<p.ms.length;i++)if(!before[p.ms[i].id]&&msDone(p,p.ms[i].id))oatPop(p.ms[i].id);
+    for(i=0;i<p.ms.length;i++)if(!before[p.ms[i].id]&&msDone(p,p.ms[i].id)&&!oatPop(p.ms[i].id))oatOverlay();
     if(!wasAll&&p.tasks.length&&p.tasks.every(function(x){return x.done}))confetti();
   };
 }
@@ -1485,7 +1495,7 @@ function doRestore(){
   renderBkStatus();
 }
 var OATLOGO=$('#apptitle').innerHTML;
-function setTitle(t){$('#apptitle').innerHTML='<span class="minilogo">'+OATLOGO+'</span><span>'+esc(t)+'</span>'}
+function headTitle(sub){$('#apptitle').innerHTML=OATLOGO+(sub?'<div class="pagesub">'+esc(sub)+'</div>':'')}
 function switchTab(t){
   $('#calmenubtn').hidden=(t==='groc'||t==='proj');$('#gback').hidden=(t!=='groc'&&t!=='proj');$('#opengroc').hidden=(t!=='todos');$('#openproj').hidden=(t!=='todos');$('#managespecial').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
   if(t!=='cal'&&$('#specialbox').open)$('#specialbox').close();
@@ -1496,7 +1506,7 @@ function switchTab(t){
   $('#view-proj').hidden=(t!=='proj');
   $('#tab-todos').className=(t==='todos'?'on':'');
   $('#tab-cal').className=(t==='cal'?'on':'');
-  if(t==='todos'){$('#apptitle').innerHTML=OATLOGO}else{setTitle(t==='cal'?'Calendar':t==='groc'?'Groceries':'Projects')}
+  headTitle(t==='groc'?'Groceries':t==='proj'?'Projects':'')
   menuId=null;
   renderAll();
 }
