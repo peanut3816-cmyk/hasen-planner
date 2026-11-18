@@ -218,6 +218,19 @@ section[hidden]{display:none}
 .specialitem .specialname{flex:1;min-width:0;overflow-wrap:anywhere}
 .specialitem small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
 #grid .day .dot.specialdot{background:#dc2626}
+/* Habits */
+.habitrow{flex-wrap:wrap;row-gap:4px}
+.hweek{flex:1 1 100%;display:flex;gap:4px;padding:2px 0 2px 34px}
+.hdcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.hdl{font-size:10px;color:#9d968e;font-weight:600}
+.hdot{width:12px;height:12px;border-radius:999px;border:1.5px solid #d8d2ca;background:#fff;cursor:pointer;position:relative}
+.hdot::before{content:'';position:absolute;inset:-8px}
+.hdot.on{background:var(--mint);border-color:var(--mint)}
+.hdot.off{border-color:#efeae4;background:#f6f4f1}
+.hdot.future{border-color:#efeae4;background:#fbfaf8;cursor:default}
+.hdays{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 100%}
+.hdays .chip{padding:6px 11px}
+#view-habits .addopts{margin-bottom:4px}
 /* Projects */
 #projcard{position:relative}
 .projitem{cursor:pointer}
@@ -245,7 +258,7 @@ section[hidden]{display:none}
 <path d="M248 6V88q0 15 17 15h8M228 38h46"/></g>
 <g transform="translate(322 96) rotate(-22)"><ellipse rx="13.75" ry="23.75" fill="#1e1c1a"/><path d="M0 -13.062500000000002V13.062500000000002" stroke="#f6f4f1" stroke-width="4.0" stroke-linecap="round"/></g></svg></h1>
   <button type="button" class="more" id="calmenubtn" aria-label="Menu" aria-expanded="false" hidden>&#8943;</button>
-  <div class="rmenu" id="calmenu" hidden><button type="button" id="opengroc" hidden>Groceries</button><button type="button" id="openproj" hidden>Projects</button><button type="button" id="managespecial" hidden>Manage special dates</button></div>
+  <div class="rmenu" id="calmenu" hidden><button type="button" id="opengroc" hidden>Groceries</button><button type="button" id="openproj" hidden>Projects</button><button type="button" id="openhab" hidden>Habits</button><button type="button" id="managespecial" hidden>Manage special dates</button></div>
   <button type="button" id="gback" aria-label="Back to To-dos" hidden>&#8249;</button>
   <button class="bkbtn" id="bktoggle" aria-expanded="false">Backup</button>
 </header>
@@ -376,6 +389,21 @@ section[hidden]{display:none}
     <button class="small" id="msnew">Add milestone</button>
   </div>
 </section>
+<section id="view-habits" hidden>
+  <div class="addrow" style="margin-top:14px">
+    <input type="text" id="hinput" placeholder="Add a habit" autocomplete="off">
+    <button class="btn" id="hadd">+</button>
+  </div>
+  <div class="addopts">
+    <div class="seg" id="hkindseg">
+      <button type="button" data-hkind="build" class="on">Build</button>
+      <button type="button" data-hkind="quit">Give up</button>
+    </div>
+    <button type="button" class="timelink" id="hdaystoggle">Pick days</button>
+  </div>
+  <div class="addrow2" id="hdaysrow" hidden></div>
+  <div id="habitlist"></div>
+</section>
 
 </div>
 
@@ -389,7 +417,7 @@ var $=function(s){return document.querySelector(s)};
 var KEY_T='hasen_planner_todos',KEY_E='hasen_planner_events',KEY_G='hasen_planner_groceries';
 var CATS={work:{label:'Work',color:'#4a4744',bg:'#ecebe8'},biz:{label:'Business',color:'#4a4744',bg:'#ecebe8'},per:{label:'Personal',color:'#4a4744',bg:'#ecebe8'},exe:{label:'Exercise',color:'#4a4744',bg:'#ecebe8'},stu:{label:'Study',color:'#4a4744',bg:'#ecebe8'},cho:{label:'Chores',color:'#4a4744',bg:'#ecebe8'}};
 var PRIS={hi:{label:'High',color:'#dc2626'},md:{label:'Normal',color:'#9d968e'},lo:{label:'Low',color:'#d8d2ca'}};
-var todos=[],events=[],gitems=[],projects=[];
+var todos=[],events=[],gitems=[],projects=[],habits=[];
 var KEY_SNAP='hasen_planner_snapshot';
 function readKey(k){var raw=null;try{raw=localStorage.getItem(k)}catch(e){return{a:[],bad:false,missing:true}}if(raw==null)return{a:[],bad:false,missing:true};try{var v=JSON.parse(raw);return{a:Array.isArray(v)?v:[],bad:!Array.isArray(v),missing:false}}catch(e){return{a:[],bad:true,missing:false}}}
 function snapData(){try{var _s=JSON.parse(localStorage.getItem(KEY_SNAP)||'null');if(_s&&Array.isArray(_s.todos)&&Array.isArray(_s.events)&&Array.isArray(_s.groceries))return _s}catch(e){}return null}
@@ -407,6 +435,12 @@ var KEY_P='hasen_planner_projects';
 var _rp=readKey(KEY_P); projects=_rp.a;
 if(_snap&&(_rp.bad||_rp.missing)&&Array.isArray(_snap.projects)&&_snap.projects.length){projects=_snap.projects;recovered=true}
 projects=projects.map(cleanProject).filter(function(x){return x});
+/* Habits: build or give up, ticked per day. Own storage key; existing keys and format untouched. */
+var KEY_H='hasen_planner_habits';
+var _rh=readKey(KEY_H); habits=_rh.a;
+if(_snap&&(_rh.bad||_rh.missing)&&Array.isArray(_snap.habits)&&_snap.habits.length){habits=_snap.habits;recovered=true}
+habits=habits.map(cleanHabit).filter(function(x){return x});
+var hEditId=null,hKind='build';
 var projOpenId=null,pMenuId=null,pEditId=null,pEditMs=0,msAdding=false,movePickT=null,projMode='',pendMid='';
 function pid(){return Date.now()+''+Math.floor(Math.random()*999)}
 function findProj(id){for(var i=0;i<projects.length;i++)if(projects[i].id===id)return projects[i];return null}
@@ -464,16 +498,18 @@ var storageBroken=false;
 function noteMsg(msg){var _n=document.createElement('div');_n.textContent=msg;_n.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.18);max-width:90vw;text-align:center';document.body.appendChild(_n);setTimeout(function(){_n.remove()},4500)}
 function persistAll(){
   try{
-    localStorage.setItem(KEY_SNAP,JSON.stringify({t:Date.now(),todos:todos,events:events,groceries:gitems,projects:projects}));
+    localStorage.setItem(KEY_SNAP,JSON.stringify({t:Date.now(),todos:todos,events:events,groceries:gitems,projects:projects,habits:habits}));
     localStorage.setItem(KEY_T,JSON.stringify(todos));
     localStorage.setItem(KEY_E,JSON.stringify(events));
     localStorage.setItem(KEY_G,JSON.stringify(gitems));
     localStorage.setItem(KEY_P,JSON.stringify(projects));
+    localStorage.setItem(KEY_H,JSON.stringify(habits));
     storageBroken=false;
   }catch(e){if(!storageBroken){storageBroken=true;noteMsg("Couldn't save. Browser storage may be full - export a backup using the Backup button.")}}
 }
 function save(){persistAll()}
 function saveG(){persistAll()}
+function saveH(){persistAll()}
 if(recovered){persistAll();setTimeout(function(){noteMsg('Recovered your entries from the in-app safety copy')},700)}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function pad(n){return String(n).padStart(2,'0')}
@@ -838,7 +874,7 @@ function renderCal(){
   renderDay();
   renderTimeline();
 }
-function renderAll(){renderTodos();renderCal();renderGrocery();renderProjects()}
+function renderAll(){renderTodos();renderCal();renderGrocery();renderProjects();renderHabits()}
 
 function addTodo(){
   var v=$('#tinput').value.trim(); if(!v)return;
@@ -1130,6 +1166,129 @@ $('#clearcheck').addEventListener('click',function(){
     for(var k=removed.length-1;k>=0;k--)gitems.splice(Math.min(removed[k].i,gitems.length),0,removed[k].item);
     saveG(); renderGrocery();
   });
+});
+
+/* Habits: build something up or give something up, one tick per good day. No streaks, no points. */
+var HMILES=[10,25,50,100];
+var HDOWFULL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function findHabit(id){for(var i=0;i<habits.length;i++)if(habits[i].id===id)return habits[i];return null}
+function habitCount(h){var n=0,k;for(k in h.ticks)if(h.ticks[k])n++;return n}
+function habitMilestone(h){return HMILES.indexOf(habitCount(h))>=0}
+function cleanHabit(x){
+  if(!x||typeof x.name!=='string'||!x.name.trim())return null;
+  var o={id:String(x.id||pid()),name:x.name.slice(0,200),kind:(x.kind==='quit')?'quit':'build',days:[],ticks:{}};
+  if(Array.isArray(x.days))x.days.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=6&&o.days.indexOf(d)<0)o.days.push(d)});
+  if(x.ticks&&typeof x.ticks==='object'){var k;for(k in x.ticks)if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&x.ticks[k])o.ticks[k]=true}
+  return o;
+}
+function weekDates(){
+  var d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));
+  var out=[],i;for(i=0;i<7;i++){out.push(keyOf(d));d.setDate(d.getDate()+1)}
+  return out;
+}
+function habitDaysLabel(h){
+  if(h.kind==='quit')return 'Giving up, every day';
+  if(!h.days.length)return 'Every day';
+  var ds=h.days.slice().sort(function(a,b){return ((a+6)%7)-((b+6)%7)});
+  return ds.map(function(d){return HDOWFULL[d]}).join(', ');
+}
+function dayChips(sel){
+  var names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],h='',i;
+  for(i=0;i<7;i++){var dow=(i+1)%7;h+='<button type="button" class="chip'+(sel.indexOf(dow)>=0?' on':'')+'" data-dow="'+dow+'">'+names[i]+'</button>'}
+  return h;
+}
+function weekDots(h,wk,todayK){
+  var WL=['M','T','W','T','F','S','S'],out='',i;
+  for(i=0;i<7;i++){
+    var k=wk[i],dow=dayFromKey(k).getDay(),cls='hdot';
+    if(h.ticks[k])cls+=' on';
+    else if(k>todayK)cls+=' future';
+    else if(h.kind==='build'&&h.days.length&&h.days.indexOf(dow)<0)cls+=' off';
+    out+='<span class="hdcol"><span class="hdl">'+WL[i]+'</span><span class="'+cls+'" data-date="'+k+'"></span></span>';
+  }
+  return out;
+}
+function renderHabits(){
+  var el=$('#habitlist');if(!el)return;
+  var html='',i,wk=weekDates(),todayK=keyOf(new Date());
+  for(i=0;i<habits.length;i++){var h=habits[i];
+    if(h.id===hEditId){
+      html+='<div class="todo editing habitrow" data-id="'+h.id+'"><div class="edcol"><input type="text" class="hetext" value="'+esc(h.name)+'" maxlength="200"></div><div class="edbtns"><button class="btn tiny" data-act="save">Save</button><button class="edit" data-act="cancel">Cancel</button></div>'+(h.kind==='build'?'<div class="hdays">'+dayChips(h.days)+'</div>':'')+'</div>';
+      continue;
+    }
+    var doneToday=!!h.ticks[todayK];
+    html+='<div class="todo habitrow'+(doneToday?' done':'')+'" data-id="'+h.id+'">'+
+      '<div class="check" data-act="toggle">'+(doneToday?'\u2713':'')+'</div>'+
+      '<div class="txt">'+esc(h.name)+'<div class="psub">'+esc(habitDaysLabel(h))+'</div></div>'+
+      '<button class="more" data-act="menu" aria-label="More">&#8943;</button>'+(menuId===h.id?'<div class="rmenu"><button type="button" data-act="edit">Edit</button><button type="button" data-act="del">Delete</button></div>':'')+
+      '<div class="hweek">'+weekDots(h,wk,todayK)+'</div></div>';
+  }
+  el.innerHTML=html||'<div class="empty">No habits yet</div>';
+}
+function addHabit(){
+  var v=$('#hinput').value.trim();if(!v)return;
+  var days=[];
+  if(hKind==='build'){var cs=$('#hdaysrow').querySelectorAll('.chip.on'),i;for(i=0;i<cs.length;i++)days.push(parseInt(cs[i].getAttribute('data-dow'),10))}
+  habits.push({id:pid(),name:v.slice(0,200),kind:hKind,days:days,ticks:{}});
+  $('#hinput').value='';
+  var all=$('#hdaysrow').querySelectorAll('.chip.on');for(i=0;i<all.length;i++)all[i].classList.remove('on');
+  saveH();renderHabits();
+}
+$('#hadd').addEventListener('click',addHabit);
+$('#hinput').addEventListener('keydown',function(e){if(e.key==='Enter')addHabit()});
+$('#hkindseg').addEventListener('click',function(e){
+  var b=e.target.closest('[data-hkind]');if(!b)return;
+  hKind=b.getAttribute('data-hkind');
+  var bs=$('#hkindseg').querySelectorAll('button'),i;
+  for(i=0;i<bs.length;i++)bs[i].className=(bs[i]===b?'on':'');
+  $('#hdaystoggle').hidden=(hKind!=='build');
+  if(hKind!=='build')$('#hdaysrow').hidden=true;
+});
+$('#hdaystoggle').addEventListener('click',function(){$('#hdaysrow').hidden=!$('#hdaysrow').hidden});
+$('#hdaysrow').addEventListener('click',function(e){var c=e.target.closest('.chip');if(c)c.classList.toggle('on')});
+$('#hdaysrow').innerHTML='<div class="hdays">'+dayChips([])+'</div>';
+$('#habitlist').addEventListener('keydown',function(e){
+  var row=e.target.closest('.todo');if(!row)return;
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('hetext')){
+    var b=row.querySelector('[data-act=save]');if(b)b.click();
+  }
+});
+$('#habitlist').addEventListener('click',function(e){
+  var row=e.target.closest('.todo');if(!row)return;
+  var id=row.getAttribute('data-id'),j;
+  if(e.target.closest('[data-act=menu]')){menuId=(menuId===id?null:id);renderHabits();return}
+  if(e.target.closest('.hdays .chip')){e.target.closest('.chip').classList.toggle('on');return}
+  menuId=null;
+  if(e.target.closest('[data-act=toggle]')){
+    var hh=findHabit(id);if(!hh)return;
+    var tk=keyOf(new Date()),adding=!hh.ticks[tk];
+    if(adding)hh.ticks[tk]=true;else delete hh.ticks[tk];
+    saveH();
+    if(adding)holdPop(row,renderHabits,function(){if(habitMilestone(hh))oatOverlay()});else renderHabits();
+  } else if(e.target.closest('.hdot')){
+    var dot=e.target.closest('.hdot'),k=dot.getAttribute('data-date');
+    if(k>keyOf(new Date()))return;
+    var h2=findHabit(id);if(!h2)return;
+    var add2=!h2.ticks[k];
+    if(add2)h2.ticks[k]=true;else delete h2.ticks[k];
+    saveH();renderHabits();
+    if(add2&&habitMilestone(h2))oatOverlay();
+  } else if(e.target.closest('[data-act=save]')){
+    var v=row.querySelector('.hetext').value.trim();if(!v)return;
+    var h3=findHabit(id);if(!h3)return;
+    h3.name=v.slice(0,200);
+    if(h3.kind==='build'){var days=[],cs=row.querySelectorAll('.hdays .chip.on');for(j=0;j<cs.length;j++)days.push(parseInt(cs[j].getAttribute('data-dow'),10));h3.days=days}
+    hEditId=null;saveH();renderHabits();
+  } else if(e.target.closest('[data-act=cancel]')){
+    hEditId=null;renderHabits();
+  } else if(e.target.closest('[data-act=edit]')){
+    hEditId=id;renderHabits();
+  } else if(e.target.closest('[data-act=del]')){
+    var idx=-1;for(j=0;j<habits.length;j++)if(habits[j].id===id)idx=j;
+    if(idx<0)return;
+    var removedH=habits.splice(idx,1)[0];hEditId=null;saveH();renderHabits();
+    showUndo('Habit deleted',function(){habits.splice(Math.min(idx,habits.length),0,removedH);saveH();renderHabits()});
+  }
 });
 
 /* Special dates use existing events and todos storage, with no migration. */
@@ -1435,7 +1594,7 @@ function cleanGroc(x){
 }
 function cleanList(arr,fn){var out=[],k;if(!Array.isArray(arr))return out;for(k=0;k<arr.length;k++){var v=fn(arr[k]);if(v)out.push(v)}return out}
 $('#bkexport').addEventListener('click',function(){
-  var data={app:'hasen-planner',version:1,exportedAt:new Date().toISOString(),todos:todos,events:events,groceries:gitems,projects:projects};
+  var data={app:'hasen-planner',version:1,exportedAt:new Date().toISOString(),todos:todos,events:events,groceries:gitems,projects:projects,habits:habits};
   var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='planner-backup-'+keyOf(new Date())+'.json';
   document.body.appendChild(a);a.click();
@@ -1455,9 +1614,15 @@ $('#bkfile').addEventListener('change',function(){
       if(!data||(!Array.isArray(data.todos)&&!Array.isArray(data.events)&&!Array.isArray(data.groceries)))throw new Error('bad');
       var ct=cleanList(data.todos,cleanTodo),ce=cleanList(data.events,cleanEvent),cg=cleanList(data.groceries,cleanGroc);
       var cp=Array.isArray(data.projects)?cleanList(data.projects,cleanProject):null;
-      pendingRestore={todos:ct,events:ce,groceries:cg,projects:cp};
+      var ch=Array.isArray(data.habits)?cleanList(data.habits,cleanHabit):null;
+      pendingRestore={todos:ct,events:ce,groceries:cg,projects:cp,habits:ch};
       var when=data.exportedAt?(' from '+fmtWhen(data.exportedAt)):'';
-      box.innerHTML='This backup'+when+' has <b>'+ct.length+'</b> task'+(ct.length===1?'':'s')+', <b>'+ce.length+'</b> event'+(ce.length===1?'':'s')+', <b>'+cg.length+'</b> grocery item'+(cg.length===1?'':'s')+(cp?(' and <b>'+cp.length+'</b> project'+(cp.length===1?'':'s')):'')+'. Restoring replaces what is currently in the planner.'+(cp?'':' Your projects are not in this backup file, so they stay as they are.')+'<div class="bkrow"><button class="btn tiny" id="bkyes">Restore</button><button class="edit" id="bkno" style="padding:8px 12px">Cancel</button></div>';
+      var parts=['<b>'+ct.length+'</b> task'+(ct.length===1?'':'s'),'<b>'+ce.length+'</b> event'+(ce.length===1?'':'s'),'<b>'+cg.length+'</b> grocery item'+(cg.length===1?'':'s')];
+      if(cp)parts.push('<b>'+cp.length+'</b> project'+(cp.length===1?'':'s'));
+      if(ch)parts.push('<b>'+ch.length+'</b> habit'+(ch.length===1?'':'s'));
+      var listing=parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1];
+      var missing=[];if(!cp)missing.push('projects');if(!ch)missing.push('habits');
+      box.innerHTML='This backup'+when+' has '+listing+'. Restoring replaces what is currently in the planner.'+(missing.length?' Your '+missing.join(' and ')+' are not in this backup file, so they stay as they are.':'')+'<div class="bkrow"><button class="btn tiny" id="bkyes">Restore</button><button class="edit" id="bkno" style="padding:8px 12px">Cancel</button></div>';
       box.hidden=false;
       $('#bkyes').addEventListener('click',doRestore);
       $('#bkno').addEventListener('click',function(){box.hidden=true;pendingRestore=null});
@@ -1471,15 +1636,16 @@ $('#bkfile').addEventListener('change',function(){
 function doRestore(){
   var box=$('#bkconfirm');box.hidden=true;
   if(!pendingRestore)return;
-  var prev={todos:todos,events:events,groceries:gitems,projects:projects};
+  var prev={todos:todos,events:events,groceries:gitems,projects:projects,habits:habits};
   todos=pendingRestore.todos;events=pendingRestore.events;gitems=pendingRestore.groceries;
   if(pendingRestore.projects)projects=pendingRestore.projects;
+  if(pendingRestore.habits)habits=pendingRestore.habits;
   pendingRestore=null;
   editId=null;editTid=null;editGid=null;projOpenId=null;
   persistAll();
   renderAll();renderChips();renderProgress();
   showUndo('Backup restored',function(){
-        todos=prev.todos;events=prev.events;gitems=prev.groceries;projects=prev.projects;
+        todos=prev.todos;events=prev.events;gitems=prev.groceries;projects=prev.projects;habits=prev.habits;
     persistAll();renderAll();renderChips();renderProgress();
   });
   renderBkStatus();
@@ -1487,16 +1653,17 @@ function doRestore(){
 var OATLOGO=$('#apptitle').innerHTML;
 function headTitle(sub){$('#apptitle').innerHTML=OATLOGO+(sub?'<div class="pagesub">'+esc(sub)+'</div>':'')}
 function switchTab(t){
-  $('#calmenubtn').hidden=(t==='groc'||t==='proj');$('#gback').hidden=(t!=='groc'&&t!=='proj');$('#opengroc').hidden=(t!=='todos');$('#openproj').hidden=(t!=='todos');$('#managespecial').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
+  $('#calmenubtn').hidden=(t==='groc'||t==='proj'||t==='hab');$('#gback').hidden=(t!=='groc'&&t!=='proj'&&t!=='hab');$('#opengroc').hidden=(t!=='todos');$('#openproj').hidden=(t!=='todos');$('#openhab').hidden=(t!=='todos');$('#managespecial').hidden=(t!=='cal');$('#calmenu').hidden=true;$('#calmenubtn').setAttribute('aria-expanded','false');
   if(t!=='cal'&&$('#specialbox').open)$('#specialbox').close();
   calOpen=false;
   $('#view-todos').hidden=(t!=='todos');
   $('#view-cal').hidden=(t!=='cal');
   $('#view-groc').hidden=(t!=='groc');
   $('#view-proj').hidden=(t!=='proj');
+  $('#view-habits').hidden=(t!=='hab');
   $('#tab-todos').className=(t==='todos'?'on':'');
   $('#tab-cal').className=(t==='cal'?'on':'');
-  headTitle(t==='groc'?'Groceries':t==='proj'?'Projects':'')
+  headTitle(t==='groc'?'Groceries':t==='proj'?'Projects':t==='hab'?'Habits':'')
   menuId=null;
   renderAll();
 }
@@ -1537,6 +1704,7 @@ document.addEventListener('touchend',function(e){
 },{passive:true});
 $('#opengroc').addEventListener('click',function(){switchTab('groc')});
 $('#openproj').addEventListener('click',function(){projOpenId=null;switchTab('proj')});
+$('#openhab').addEventListener('click',function(){switchTab('hab')});
 renderChips();
 switchTab('todos');
 </script>
